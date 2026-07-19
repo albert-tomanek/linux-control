@@ -81,10 +81,6 @@ private:
 
     QSoundEffect m_navSound;
 
-    // Opacity effect on the current category sidebar's text wrap; used to fade
-    // out the text before navigating to a subcategory.
-    QGraphicsOpacityEffect *m_sidebarTextEffect = nullptr;
-
     // Active Linux Update page and its "Check for updates" sidebar label.
     LinuxUpdatePage *m_updatePage         = nullptr;
     QLabel            *m_checkUpdatesLabel  = nullptr;

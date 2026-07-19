@@ -325,17 +325,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
                     if (path.isEmpty()) navigateHome();
                     else                navigateTo(path);
                 };
-                if (m_sidebarTextEffect) {
-                    auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity");
-                    anim->setStartValue(1.0);
-                    anim->setEndValue(0.0);
-                    anim->setDuration(300);
-                    anim->setEasingCurve(QEasingCurve::InCubic);
-                    QObject::connect(anim, &QPropertyAnimation::finished, this, go);
-                    anim->start(QAbstractAnimation::DeleteWhenStopped);
-                } else {
-                    QMetaObject::invokeMethod(this, go, Qt::QueuedConnection);
-                }
+
+                QMetaObject::invokeMethod(this, go, Qt::QueuedConnection);
+
                 return true;
             }
             // (Intermediate crumb links are handled on press, above.)
@@ -442,7 +434,6 @@ void MainWindow::showEntry(const QString &entry)
     m_subpageLinks.clear();
     m_commandLinks.clear();
     m_crumbNavLinks.clear();
-    m_sidebarTextEffect  = nullptr;
     m_updatePage         = nullptr;
     m_checkUpdatesLabel  = nullptr;
 
@@ -670,47 +661,23 @@ Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
     QObject::connect(bar->goHome(), &QAction::triggered, this,
                      &MainWindow::navigateHome, Qt::QueuedConnection);
 
+    auto *grp = new QActionGroup(this);
+    grp->setExclusive(true);
+
     for (const QString &cat : navOrder()) {
-        if (cat == currentCategory) {
-            auto *row = new QHBoxLayout;
-            row->setContentsMargins(0, 3, 0, 3);
-            row->setSpacing(4);
-            auto *bullet = new QLabel("•");
-            bullet->setStyleSheet("color: #000000; font-size: 9pt; background: transparent;");
-            row->addWidget(bullet, 0, Qt::AlignTop);
-            auto *label = new QLabel(cat);
-            QFont bf = label->font();
-            bf.setPointSize(9);
-            bf.setBold(true);
-            label->setFont(bf);
-            label->setWordWrap(true);
-            label->setStyleSheet("color: #000000; background: transparent;");
-            row->addWidget(label, 1);
-            bar->navV->addLayout(row);
-        } else {
-            auto *link = new QLabel(cat);
-            QFont lf = link->font();
-            lf.setPointSize(9);
-            link->setFont(lf);
-            link->setWordWrap(true);
-            link->setCursor(Qt::PointingHandCursor);
-            link->setContentsMargins(12, 3, 0, 3);
-            link->setStyleSheet(
-                "QLabel { color: #000000; background: transparent; }"
-                "QLabel:hover { color: #0033AA; }"
-            );
-            link->installEventFilter(this);
-            m_navLinks.insert(link, cat);
-            bar->navV->addWidget(link);
-        }
+        auto *act = grp->addAction(cat);
+        act->setCheckable(true);
+
+        if (cat == currentCategory)
+            act->setChecked(true);
+
+        bar->addDest(act);
+
+        connect(act, &QAction::triggered, [=]() {
+            this->navigateTo(cat);
+        });
     }
     bar->navV->addStretch(1);
-
-    // Static sidebar (shown at full opacity). The effect is kept so that
-    // navigating into a subpage can fade this text out first.
-    m_sidebarTextEffect = new QGraphicsOpacityEffect(bar->textWrap);
-    bar->textWrap->setGraphicsEffect(m_sidebarTextEffect);
-    m_sidebarTextEffect->setOpacity(1.0);
 
     return bar;
 }
