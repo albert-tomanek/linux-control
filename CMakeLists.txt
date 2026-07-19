@@ -17,6 +17,7 @@ find_package(AeroQt REQUIRED)
 add_executable(controlpanel
     src/main.cpp
     src/ui/MainWindow.cpp
+    src/ui/Sidebar.cpp
     src/ui/CategoryWidget.cpp
     src/ui/pages/LinuxUpdatePage.cpp
     src/ui/pages/SystemPage.cpp

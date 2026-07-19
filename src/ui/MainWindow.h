@@ -6,6 +6,8 @@
 #include <QSoundEffect>
 #include <QGraphicsOpacityEffect>
 
+#include "Sidebar.h"
+
 class QScrollArea;
 class QLineEdit;
 class QToolButton;
@@ -29,18 +31,12 @@ private:
     // The shared chrome of a left-nav pane: a width-clipped scroll area, the
     // grey navPane frame, and the text layout (already seeded with the
     // "Control Panel Home" link) that callers fill with their own entries.
-    struct Sidebar {
-        QScrollArea *clip;
-        QWidget     *textWrap;
-        QVBoxLayout *navV;
-    };
-    Sidebar buildSidebarShell(int initialWidth);
 
     void buildCrumbBar();
     QWidget *buildHomePage();
     QWidget *buildCategoryPage(const QString &category);
-    QScrollArea *buildNavSidebar(const QString &currentCategory);
-    QScrollArea *buildSubpageSidebar(const QStringList &links,
+    Sidebar *buildNavSidebar(const QString &currentCategory);
+    Sidebar *buildSubpageSidebar(const QStringList &links,
                                      const QStringList &seeAlso = {});
 
     void setCrumbTrail(const QStringList &trail);

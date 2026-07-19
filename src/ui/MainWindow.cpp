@@ -662,56 +662,13 @@ QWidget *MainWindow::buildHomePage()
     return content;
 }
 
-MainWindow::Sidebar MainWindow::buildSidebarShell(int initialWidth)
-{
-    auto *clip = new QScrollArea;
-    clip->setFixedWidth(initialWidth);
-    clip->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    clip->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    clip->setFrameShape(QFrame::NoFrame);
-    clip->setWidgetResizable(true);
-    clip->setStyleSheet("QScrollArea { background: transparent; border: none; }");
-
-    auto *pane = new QFrame;
-    pane->setObjectName("navPane");
-    pane->setFixedWidth(168);
-    pane->setStyleSheet(
-        "#navPane { background: #F1F4F9; border-right: 1px solid #DCE0E8; }"
-    );
-    auto *outerV = new QVBoxLayout(pane);
-    outerV->setContentsMargins(0, 0, 0, 0);
-    outerV->setSpacing(0);
-
-    // Text lives in a child widget so a fade effect touches only the text,
-    // never the pane background.
-    auto *textWrap = new QWidget;
-    textWrap->setStyleSheet("background: transparent;");
-    auto *navV = new QVBoxLayout(textWrap);
-    navV->setContentsMargins(12, 14, 8, 10);
-    navV->setSpacing(0);
-    outerV->addWidget(textWrap);
-
-    auto *controlHome = new QPushButton("Control Panel Home");
-    controlHome->setCursor(Qt::PointingHandCursor);
-    controlHome->setFlat(true);
-    controlHome->setStyleSheet(
-        "QPushButton { border: none; background: transparent; color: #000000;"
-        " text-align: left; padding: 0; font-size: 9pt; }"
-        "QPushButton:hover { color: #0033AA; }"
-    );
-    QObject::connect(controlHome, &QPushButton::clicked, this,
-                     &MainWindow::navigateHome, Qt::QueuedConnection);
-    navV->addWidget(controlHome);
-    navV->addSpacing(16);
-
-    clip->setWidget(pane);
-    return { clip, textWrap, navV };
-}
-
-QScrollArea *MainWindow::buildNavSidebar(const QString &currentCategory)
+Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
 {
     // Width 0: buildCategoryPage animates the clip open to 168px.
-    Sidebar bar = buildSidebarShell(0);
+    Sidebar *bar = new Sidebar(0, this);
+
+    QObject::connect(bar->goHome(), &QAction::triggered, this,
+                     &MainWindow::navigateHome, Qt::QueuedConnection);
 
     for (const QString &cat : navOrder()) {
         if (cat == currentCategory) {
@@ -729,7 +686,7 @@ QScrollArea *MainWindow::buildNavSidebar(const QString &currentCategory)
             label->setWordWrap(true);
             label->setStyleSheet("color: #000000; background: transparent;");
             row->addWidget(label, 1);
-            bar.navV->addLayout(row);
+            bar->navV->addLayout(row);
         } else {
             auto *link = new QLabel(cat);
             QFont lf = link->font();
@@ -744,24 +701,26 @@ QScrollArea *MainWindow::buildNavSidebar(const QString &currentCategory)
             );
             link->installEventFilter(this);
             m_navLinks.insert(link, cat);
-            bar.navV->addWidget(link);
+            bar->navV->addWidget(link);
         }
     }
-    bar.navV->addStretch(1);
+    bar->navV->addStretch(1);
 
     // Static sidebar (shown at full opacity). The effect is kept so that
     // navigating into a subpage can fade this text out first.
-    m_sidebarTextEffect = new QGraphicsOpacityEffect(bar.textWrap);
-    bar.textWrap->setGraphicsEffect(m_sidebarTextEffect);
+    m_sidebarTextEffect = new QGraphicsOpacityEffect(bar->textWrap);
+    bar->textWrap->setGraphicsEffect(m_sidebarTextEffect);
     m_sidebarTextEffect->setOpacity(1.0);
 
-    return bar.clip;
+    return bar;
 }
 
-QScrollArea *MainWindow::buildSubpageSidebar(const QStringList &links,
+Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
                                               const QStringList &seeAlso)
 {
-    Sidebar bar = buildSidebarShell(168);
+    Sidebar *bar = new Sidebar(168, this);
+    QObject::connect(bar->goHome(), &QAction::triggered, this,
+                     &MainWindow::navigateHome, Qt::QueuedConnection);
 
     auto addLink = [&](const QString &text) {
         auto *l = new QLabel(text);
@@ -792,44 +751,44 @@ QScrollArea *MainWindow::buildSubpageSidebar(const QStringList &links,
             m_subpageLinks.insert(l, knownLinks.value(text));
         else if (text == "Device Manager")
             m_commandLinks.insert(l, kDeviceManagerCmd);
-        bar.navV->addWidget(l);
+        bar->navV->addWidget(l);
     };
 
     for (const QString &text : links)
         addLink(text);
 
-    bar.navV->addStretch(1);
+    bar->navV->addStretch(1);
 
     if (!seeAlso.isEmpty()) {
         auto *sep = new QFrame;
         sep->setFrameShape(QFrame::HLine);
         sep->setStyleSheet("color: #B8C4D8;");
-        bar.navV->addWidget(sep);
-        bar.navV->addSpacing(4);
+        bar->navV->addWidget(sep);
+        bar->navV->addSpacing(4);
 
         auto *seeAlsoLabel = new QLabel("See also");
         QFont f = seeAlsoLabel->font();
         f.setPointSize(8);
         seeAlsoLabel->setFont(f);
         seeAlsoLabel->setStyleSheet("color: #666666; background: transparent;");
-        bar.navV->addWidget(seeAlsoLabel);
+        bar->navV->addWidget(seeAlsoLabel);
 
         for (const QString &text : seeAlso)
             addLink(text);
     }
 
     // Subpage sidebars are full width from the start and fade their text in.
-    auto *fadeEffect = new QGraphicsOpacityEffect(bar.textWrap);
-    bar.textWrap->setGraphicsEffect(fadeEffect);
+    auto *fadeEffect = new QGraphicsOpacityEffect(bar->textWrap);
+    bar->textWrap->setGraphicsEffect(fadeEffect);
     fadeEffect->setOpacity(0.0);
-    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", bar.clip);
+    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", bar);
     fadeAnim->setStartValue(0.0);
     fadeAnim->setEndValue(1.0);
     fadeAnim->setDuration(2000);
     fadeAnim->setEasingCurve(QEasingCurve::OutCubic);
-    QTimer::singleShot(0, bar.clip, [fadeAnim]() { fadeAnim->start(); });
+    QTimer::singleShot(0, bar, [fadeAnim]() { fadeAnim->start(); });
 
-    return bar.clip;
+    return bar;
 }
 
 QWidget *MainWindow::buildCategoryPage(const QString &currentCategory)
