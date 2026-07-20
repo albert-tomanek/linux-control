@@ -1,4 +1,18 @@
+#include <AeroQt/util/objecteventlistener.h>
+
 #include "Sidebar.h"
+
+void makeButtonWrapText(QAbstractButton *that);
+
+QString kStyleSheet = (
+    "QScrollArea { background: transparent; border: none; }"
+    "QToolButton, QRadioButton"
+        "{ border: none; background: transparent; color: #000000; text-align: left; padding: 0; font-size: 9pt; }"
+    "QToolButton:hover, QRadioButton:hover"
+        "{ color: #0033AA; text-decoration: underline; }"
+    "QToolButton:hover:disabled, QRadioButton:hover:disabled"
+        "{ text-decoration: none; color: gray; }"
+);
 
 Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     QScrollArea(parent)
@@ -8,12 +22,7 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->setFrameShape(QFrame::NoFrame);
     this->setWidgetResizable(true);
-    this->setStyleSheet(
-        "QScrollArea { background: transparent; border: none; }"
-        "QToolButton         { border: none; background: transparent; color: #000000; text-align: left; padding: 0; font-size: 9pt; }"
-        "QToolButton:hover   { color: #0033AA; text-decoration: underline; }"
-        "QToolButton:hover:disabled { text-decoration: none; }"
-    );
+    this->setStyleSheet(kStyleSheet);
 
     auto *pane = new QFrame;
     pane->setObjectName("navPane");
@@ -46,46 +55,93 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     this->setWidget(pane);
 
     /* Effects */
-    // Static sidebar (shown at full opacity). The effect is kept so that
-    // navigating into a subpage can fade this text out first.
+
     m_sidebarTextEffect = new QGraphicsOpacityEffect(textWrap);
     textWrap->setGraphicsEffect(m_sidebarTextEffect);
     m_sidebarTextEffect->setOpacity(1.0);
 }
 
+void Sidebar::setFadeInText(bool b)
+{
+    m_fadeOutText = b;
+
+    auto *fadeEffect = new QGraphicsOpacityEffect(textWrap);
+    textWrap->setGraphicsEffect(fadeEffect);
+    fadeEffect->setOpacity(0.0);
+    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", this);
+    fadeAnim->setStartValue(0.0);
+    fadeAnim->setEndValue(1.0);
+    fadeAnim->setDuration(2000);
+    fadeAnim->setEasingCurve(QEasingCurve::OutCubic);
+
+    QTimer::singleShot(0, this, [fadeAnim]() { fadeAnim->start(); });
+}
+
+void Sidebar::setFadeOutText(bool b)
+{
+    m_fadeOutText = b;
+}
+
+
 void Sidebar::addDest(QAction *act)
 {
-    if (act->isCheckable()) {   // Act is part of a group of destinations that switch
-        auto *but = new LineWrappedRadioButton;
+    auto triggerAction = [=](){
+        if (m_fadeOutText) {
+            auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity");
+            anim->setStartValue(1.0);
+            anim->setEndValue(0.0);
+            anim->setDuration(300);
+            anim->setEasingCurve(QEasingCurve::InCubic);
+            QObject::connect(anim, &QPropertyAnimation::finished, act, &QAction::trigger);
+            anim->start(QAbstractAnimation::DeleteWhenStopped);
+        }
+        else {
+            act->trigger();
+        }
+    };
+
+    if (act->isCheckable()) {
+        /* Act is part of a group of destinations that switch */
+
+        auto *but = new QRadioButton;
+        makeButtonWrapText(but);
 
         but->setText(act->text());
         but->setToolTip(act->toolTip());
+        but->setWhatsThis(act->whatsThis());
         but->setIcon(act->icon());
         but->setChecked(act->isChecked());
 
         connect(but, &QAbstractButton::toggled, [=](bool checked) {
-            if (checked) {
-                auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity");
-                anim->setStartValue(1.0);
-                anim->setEndValue(0.0);
-                anim->setDuration(300);
-                anim->setEasingCurve(QEasingCurve::InCubic);
-                QObject::connect(anim, &QPropertyAnimation::finished, act, &QAction::trigger);
-                anim->start(QAbstractAnimation::DeleteWhenStopped);
-            }
+            if (checked)
+                triggerAction();
         });
+
+        navV->addWidget(but);
+    }
+    else if (auto *wa = qobject_cast<QWidgetAction *>(act)) {
+        navV->addWidget(wa->defaultWidget());
+    }
+    else {
+        auto *but = new QToolButton;
+        makeButtonWrapText(but);
+
+        but->setDefaultAction(act);
+
+        disconnect(but, &QAbstractButton::clicked, nullptr, nullptr);  // Remove the clicked() -> trigger() conneciton; we need to wedge the animation in between them
+        connect(but, &QAbstractButton::clicked, triggerAction);
 
         navV->addWidget(but);
     }
 }
 
 
-void LineWrappedRadioButton::wrapLines(int width) {
+static void wrapLines(QAbstractButton *that, int width) {
     QString word, line, result;
-    for (QChar c : text().replace('\n', ' ') + ' ') {
+    for (QChar c : that->text().replace('\n', ' ') + ' ') {
         word += c;
         if (c.isSpace()) {
-            if (!line.isEmpty() && fontMetrics().horizontalAdvance(line + word.trimmed()) > width) {
+            if (!line.isEmpty() && that->fontMetrics().horizontalAdvance(line + word.trimmed()) > width) {
                 result += line.trimmed() + '\n';
                 line = word;
             } else {
@@ -95,18 +151,18 @@ void LineWrappedRadioButton::wrapLines(int width) {
         }
     }
     result += line.trimmed();
-    setText(result.trimmed());
+    that->setText(result.trimmed());
 }
 
-void LineWrappedRadioButton::resizeEvent(QResizeEvent *event) {
-    int controlElementWidth = sizeHint().width() - style()->itemTextRect(fontMetrics(), QRect(), Qt::TextShowMnemonic, false, text()).width();
-    wrapLines(event->size().width() - controlElementWidth);
-    QRadioButton::resizeEvent(event);
-}
+void makeButtonWrapText(QAbstractButton *that)
+{
+    onEvent(that, QEvent::Resize, [=](QEvent *event) {
+        int controlElementWidth = that->sizeHint().width() - that->style()->itemTextRect(that->fontMetrics(), QRect(), Qt::TextShowMnemonic, false, that->text()).width();
+        wrapLines(that, static_cast<QResizeEvent *>(event)->size().width() - controlElementWidth);
+    });
 
-LineWrappedRadioButton::LineWrappedRadioButton(const QString &text, QWidget *parent) : QRadioButton(text, parent) {
-    QSizePolicy policy = sizePolicy();
-    policy.setHorizontalPolicy(QSizePolicy::Preferred);
-    setSizePolicy(policy);
-    updateGeometry();
+    QSizePolicy policy = that->sizePolicy();
+    // policy.setHorizontalPolicy(QSizePolicy::Preferred);
+    that->setSizePolicy(policy);
+    that->updateGeometry();
 }

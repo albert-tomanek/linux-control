@@ -12,11 +12,15 @@ class Sidebar: public QScrollArea {
     QVBoxLayout *navV;
 
     QGraphicsOpacityEffect *m_sidebarTextEffect;
+    bool m_fadeInText, m_fadeOutText;
 
     QAction *m_goHome;
 
 public:
     inline QAction *goHome() { return m_goHome; }
+
+    void setFadeInText(bool b);
+    void setFadeOutText(bool b);
 
 public:
     friend class MainWindow;

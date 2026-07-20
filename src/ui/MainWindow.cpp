@@ -679,6 +679,10 @@ Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
     }
     bar->navV->addStretch(1);
 
+    // Static sidebar (shown at full opacity). The effect is kept so that
+    // navigating into a subpage can fade this text out first.
+    bar->setFadeOutText(true);
+
     return bar;
 }
 
@@ -690,6 +694,7 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
                      &MainWindow::navigateHome, Qt::QueuedConnection);
 
     auto addLink = [&](const QString &text) {
+/*
         auto *l = new QLabel(text);
         QFont f = l->font();
         f.setPointSize(9);
@@ -706,6 +711,7 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
             m_checkUpdatesLabel = l;
         // Cross-navigation links shared by the subpage sidebars. "Control Panel
         // Home" maps to the empty path, which the click handler routes home.
+*/
         static const QHash<QString, QString> knownLinks = {
             { "Control Panel Home",          QString() },
             { "View installed updates",      kInstalledUpdatesPath },
@@ -714,11 +720,24 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
             { "Network and Sharing Center",  kNetworkSharingPath },
             { "Performance Information and Tools", kPerformancePath },
         };
+/*
         if (knownLinks.contains(text))
             m_subpageLinks.insert(l, knownLinks.value(text));
-        else if (text == "Device Manager")
+        else if (text == "Device Manager")  // NOTE: See cca line 300 with m_commandLinks
             m_commandLinks.insert(l, kDeviceManagerCmd);
         bar->navV->addWidget(l);
+*/
+        auto *act = new QAction(text, this);
+
+        if (knownLinks.contains(text)) {
+            connect(act, &QAction::triggered, [=]() {
+                this->navigateTo(knownLinks.value(text));
+            });
+        }
+        else
+            act->setEnabled(false);
+
+        bar->addDest(act);
     };
 
     for (const QString &text : links)
@@ -745,15 +764,7 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
     }
 
     // Subpage sidebars are full width from the start and fade their text in.
-    auto *fadeEffect = new QGraphicsOpacityEffect(bar->textWrap);
-    bar->textWrap->setGraphicsEffect(fadeEffect);
-    fadeEffect->setOpacity(0.0);
-    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", bar);
-    fadeAnim->setStartValue(0.0);
-    fadeAnim->setEndValue(1.0);
-    fadeAnim->setDuration(2000);
-    fadeAnim->setEasingCurve(QEasingCurve::OutCubic);
-    QTimer::singleShot(0, bar, [fadeAnim]() { fadeAnim->start(); });
+    bar->setFadeInText(true);
 
     return bar;
 }
