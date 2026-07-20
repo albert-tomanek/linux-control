@@ -671,7 +671,7 @@ Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
         if (cat == currentCategory)
             act->setChecked(true);
 
-        bar->addDest(act);
+        bar->addItem(act);
 
         connect(act, &QAction::triggered, [=]() {
             this->navigateTo(cat);
@@ -681,7 +681,7 @@ Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
 
     // Static sidebar (shown at full opacity). The effect is kept so that
     // navigating into a subpage can fade this text out first.
-    bar->setFadeOutText(true);
+    // bar->setFadeOutText(true);
 
     return bar;
 }
@@ -692,6 +692,15 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
     Sidebar *bar = new Sidebar(168, this);
     QObject::connect(bar->goHome(), &QAction::triggered, this,
                      &MainWindow::navigateHome, Qt::QueuedConnection);
+
+    static const QHash<QString, QString> knownLinks = {
+       { "Control Panel Home",          QString() },
+       { "View installed updates",      kInstalledUpdatesPath },
+       { "Uninstall a program",         kProgramsFeaturesPath },
+       { "Linux Firewall",              kFirewallPath },
+       { "Network and Sharing Center",  kNetworkSharingPath },
+       { "Performance Information and Tools", kPerformancePath },
+    };
 
     auto addLink = [&](const QString &text) {
 /*
@@ -712,14 +721,6 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
         // Cross-navigation links shared by the subpage sidebars. "Control Panel
         // Home" maps to the empty path, which the click handler routes home.
 */
-        static const QHash<QString, QString> knownLinks = {
-            { "Control Panel Home",          QString() },
-            { "View installed updates",      kInstalledUpdatesPath },
-            { "Uninstall a program",         kProgramsFeaturesPath },
-            { "Linux Firewall",              kFirewallPath },
-            { "Network and Sharing Center",  kNetworkSharingPath },
-            { "Performance Information and Tools", kPerformancePath },
-        };
 /*
         if (knownLinks.contains(text))
             m_subpageLinks.insert(l, knownLinks.value(text));
@@ -737,30 +738,25 @@ Sidebar *MainWindow::buildSubpageSidebar(const QStringList &links,
         else
             act->setEnabled(false);
 
-        bar->addDest(act);
+        bar->addItem(act);
     };
 
     for (const QString &text : links)
         addLink(text);
 
-    bar->navV->addStretch(1);
 
-    if (!seeAlso.isEmpty()) {
-        auto *sep = new QFrame;
-        sep->setFrameShape(QFrame::HLine);
-        sep->setStyleSheet("color: #B8C4D8;");
-        bar->navV->addWidget(sep);
-        bar->navV->addSpacing(4);
+    for (const QString &text : seeAlso) {
+        auto *act = new QAction(text, this);
 
-        auto *seeAlsoLabel = new QLabel("See also");
-        QFont f = seeAlsoLabel->font();
-        f.setPointSize(8);
-        seeAlsoLabel->setFont(f);
-        seeAlsoLabel->setStyleSheet("color: #666666; background: transparent;");
-        bar->navV->addWidget(seeAlsoLabel);
+        if (knownLinks.contains(text)) {
+            connect(act, &QAction::triggered, [=]() {
+                this->navigateTo(knownLinks.value(text));
+            });
+        }
+        else
+            act->setEnabled(false);
 
-        for (const QString &text : seeAlso)
-            addLink(text);
+        bar->addSeeAlso(act);
     }
 
     // Subpage sidebars are full width from the start and fade their text in.

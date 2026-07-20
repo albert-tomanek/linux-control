@@ -8,8 +8,9 @@ class MainWindow;
 class Sidebar: public QScrollArea {
     Q_OBJECT
 
-    QWidget     *textWrap;
-    QVBoxLayout *navV;
+    QWidget     *textWrap, *m_seeAlsoLabel;
+    QVBoxLayout *navV, *m_seeAlsoV;
+    QFormLayout *m_itemsL;
 
     QGraphicsOpacityEffect *m_sidebarTextEffect;
     bool m_fadeInText, m_fadeOutText;
@@ -27,21 +28,11 @@ public:
 
     Sidebar(int initialWidth, QWidget *parent = nullptr);
 
-    void addDest(QAction *act); // When an destination is clicked, it emits ::triggered()
+    void addItem(QAction *act); // When an destination is clicked, it emits ::triggered()
+    void addSeeAlso(QAction *act);
+
+private:
+    void widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator);
 };
-
-// https://stackoverflow.com/a/75379447
-class LineWrappedRadioButton : public QRadioButton {
-    void wrapLines(int width);
-protected:
-    virtual void resizeEvent(QResizeEvent *event);
-public:
-    LineWrappedRadioButton(QWidget *parent = nullptr) : LineWrappedRadioButton(QString(), parent) { }
-    LineWrappedRadioButton(const QString &text, QWidget *parent = nullptr);
-    virtual QSize minimumSizeHint() const { return QSize(QRadioButton().minimumSizeHint().width(), sizeHint().height()); }
-};
-
-
-
 
 #endif // SIDEBAR_H

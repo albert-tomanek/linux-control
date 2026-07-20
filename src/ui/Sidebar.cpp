@@ -1,16 +1,19 @@
 #include <AeroQt/util/objecteventlistener.h>
+#include <AeroQt/util/props.h>
+
+#include <functional>
 
 #include "Sidebar.h"
 
-void makeButtonWrapText(QAbstractButton *that);
+static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline);
 
 QString kStyleSheet = (
     "QScrollArea { background: transparent; border: none; }"
-    "QToolButton, QRadioButton"
+    "QToolButton, QLabel"
         "{ border: none; background: transparent; color: #000000; text-align: left; padding: 0; font-size: 9pt; }"
-    "QToolButton:hover, QRadioButton:hover"
+    "QToolButton:hover, QLabel:hover"
         "{ color: #0033AA; text-decoration: underline; }"
-    "QToolButton:hover:disabled, QRadioButton:hover:disabled"
+    "QToolButton:hover:disabled, QLabel:hover:disabled"
         "{ text-decoration: none; color: gray; }"
 );
 
@@ -34,6 +37,8 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     outerV->setContentsMargins(0, 0, 0, 0);
     outerV->setSpacing(0);
 
+    this->setWidget(pane);
+
     // Text lives in a child widget so a fade effect touches only the text,
     // never the pane background.
     this->textWrap = new QWidget;
@@ -43,16 +48,33 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     navV->setSpacing(0);
     outerV->addWidget(textWrap);
 
+    m_itemsL = new QFormLayout;
+    m_itemsL->setSpacing(6);
+    m_itemsL->setHorizontalSpacing(0);
+    navV->addLayout(m_itemsL);
+
+    navV->addStretch(1);
+
+    m_seeAlsoLabel = new QLabel("See also");
+    QFont f = m_seeAlsoLabel->font();
+    f.setPointSize(8);
+    m_seeAlsoLabel->setFont(f);
+    m_seeAlsoLabel->setStyleSheet("color: #666666; background: transparent;");
+    m_seeAlsoLabel->hide();
+    navV->addWidget(m_seeAlsoLabel);
+
+    m_seeAlsoV = new QVBoxLayout;
+    m_seeAlsoV->setContentsMargins(0, 8, 0, 0);
+    m_seeAlsoV->setSpacing(6);
+    navV->addLayout(m_seeAlsoV);
+
     m_goHome = new QAction("Control Panel Home", this);
-
-    auto *controlHome = new QToolButton;
-    controlHome->setDefaultAction(goHome());
-    controlHome->setAutoRaise(true);
-    controlHome->setCursor(Qt::PointingHandCursor);
-    navV->addWidget(controlHome);
-    navV->addSpacing(16);
-
-    this->setWidget(pane);
+    {
+        QWidget *w, *indic;
+        widgetForAction(goHome(), w, indic);
+        navV->insertSpacing(0, 16);
+        navV->insertWidget(0, w);
+    }
 
     /* Effects */
 
@@ -63,7 +85,7 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
 
 void Sidebar::setFadeInText(bool b)
 {
-    m_fadeOutText = b;
+    m_fadeInText = b;
 
     auto *fadeEffect = new QGraphicsOpacityEffect(textWrap);
     textWrap->setGraphicsEffect(fadeEffect);
@@ -83,7 +105,32 @@ void Sidebar::setFadeOutText(bool b)
 }
 
 
-void Sidebar::addDest(QAction *act)
+void Sidebar::addItem(QAction *act)
+{
+    QWidget *w = nullptr;
+    QWidget *indic = nullptr;
+
+    widgetForAction(act, w, indic);
+
+    if (indic) {
+        m_itemsL->addRow(indic, w);
+
+        m_itemsL->setHorizontalSpacing(6);    // Don't actually have any spacing until at least one item with a check indicator is added
+    }
+    else
+        m_itemsL->addRow(nullptr, w);
+}
+
+void Sidebar::addSeeAlso(QAction *act)
+{
+    QWidget *w, *indic;
+    widgetForAction(act, w, indic);
+
+    m_seeAlsoV->addWidget(w);
+    m_seeAlsoLabel->show();
+}
+
+void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator)
 {
     auto triggerAction = [=](){
         if (m_fadeOutText) {
@@ -96,73 +143,68 @@ void Sidebar::addDest(QAction *act)
             anim->start(QAbstractAnimation::DeleteWhenStopped);
         }
         else {
-            act->trigger();
+            QMetaObject::invokeMethod(act, &QAction::trigger, Qt::QueuedConnection);
         }
     };
 
     if (act->isCheckable()) {
         /* Act is part of a group of destinations that switch */
 
-        auto *but = new QRadioButton;
-        makeButtonWrapText(but);
+        auto *but = new QLabel;
 
         but->setText(act->text());
         but->setToolTip(act->toolTip());
         but->setWhatsThis(act->whatsThis());
-        but->setIcon(act->icon());
-        but->setChecked(act->isChecked());
 
-        connect(but, &QAbstractButton::toggled, [=](bool checked) {
-            if (checked)
-                triggerAction();
+        underlineOnHover(but, [=](){ return act->isEnabled(); });
+        but->setWordWrap(true);
+
+        onEvent(but, QEvent::MouseButtonRelease, [=](QEvent *evt) {
+            triggerAction();
         });
 
-        navV->addWidget(but);
+        indicator = new QLabel;
+        if (auto *ag = act->actionGroup())
+            if (ag->isExclusive())
+                bind_prop(ag, "enabled", indicator, "text", &QActionGroup::triggered, true, [=](auto _) {   // We're not actually binding to "enabled", we're just using this func for brevity and to call syncOnCreate
+                    return QVariant(ag->checkedAction() == act ? "<strong>\u25cf</strong>" : "");
+                });
+
+        widget = but;
     }
     else if (auto *wa = qobject_cast<QWidgetAction *>(act)) {
-        navV->addWidget(wa->defaultWidget());
+        widget = wa->defaultWidget();
     }
     else {
-        auto *but = new QToolButton;
-        makeButtonWrapText(but);
+        auto *but = new QLabel;
 
-        but->setDefaultAction(act);
+        but->setText(act->text());
+        but->setToolTip(act->toolTip());
+        but->setWhatsThis(act->whatsThis());
 
-        disconnect(but, &QAbstractButton::clicked, nullptr, nullptr);  // Remove the clicked() -> trigger() conneciton; we need to wedge the animation in between them
-        connect(but, &QAbstractButton::clicked, triggerAction);
+        but->setWordWrap(true);
+        underlineOnHover(but, [=](){ return act->isEnabled(); });
 
-        navV->addWidget(but);
+        onEvent(but, QEvent::MouseButtonRelease, [=](QEvent *evt) {
+            triggerAction();
+        });
+
+        widget = but;
     }
 }
 
 
-static void wrapLines(QAbstractButton *that, int width) {
-    QString word, line, result;
-    for (QChar c : that->text().replace('\n', ' ') + ' ') {
-        word += c;
-        if (c.isSpace()) {
-            if (!line.isEmpty() && that->fontMetrics().horizontalAdvance(line + word.trimmed()) > width) {
-                result += line.trimmed() + '\n';
-                line = word;
-            } else {
-                line += word;
-            }
-            word.clear();
-        }
-    }
-    result += line.trimmed();
-    that->setText(result.trimmed());
-}
-
-void makeButtonWrapText(QAbstractButton *that)
+static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline)
 {
-    onEvent(that, QEvent::Resize, [=](QEvent *event) {
-        int controlElementWidth = that->sizeHint().width() - that->style()->itemTextRect(that->fontMetrics(), QRect(), Qt::TextShowMnemonic, false, that->text()).width();
-        wrapLines(that, static_cast<QResizeEvent *>(event)->size().width() - controlElementWidth);
+    onEvent(but, QEvent::Enter, [=](QEvent *) {
+        QFont f = but->font();
+        f.setUnderline(shouldUnderline());
+        but->setFont(f);
     });
 
-    QSizePolicy policy = that->sizePolicy();
-    // policy.setHorizontalPolicy(QSizePolicy::Preferred);
-    that->setSizePolicy(policy);
-    that->updateGeometry();
+    onEvent(but, QEvent::Leave, [=](QEvent *) {
+        QFont f = but->font();
+        f.setUnderline(false);
+        but->setFont(f);
+    });
 }
