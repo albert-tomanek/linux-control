@@ -48,6 +48,13 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     navV->setSpacing(0);
     outerV->addWidget(textWrap);
 
+    /* Effects */
+    {
+        m_sidebarTextEffect = new QGraphicsOpacityEffect(textWrap);
+        textWrap->setGraphicsEffect(m_sidebarTextEffect);
+        m_sidebarTextEffect->setOpacity(1.0);
+    }
+
     m_itemsL = new QFormLayout;
     m_itemsL->setSpacing(6);
     m_itemsL->setHorizontalSpacing(0);
@@ -75,12 +82,6 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
         navV->insertSpacing(0, 16);
         navV->insertWidget(0, w);
     }
-
-    /* Effects */
-
-    m_sidebarTextEffect = new QGraphicsOpacityEffect(textWrap);
-    textWrap->setGraphicsEffect(m_sidebarTextEffect);
-    m_sidebarTextEffect->setOpacity(1.0);
 }
 
 void Sidebar::setFadeInText(bool b)
@@ -134,7 +135,7 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
 {
     auto triggerAction = [=](){
         if (m_fadeOutText) {
-            auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity");
+            auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity", m_sidebarTextEffect);
             anim->setStartValue(1.0);
             anim->setEndValue(0.0);
             anim->setDuration(300);

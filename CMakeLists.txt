@@ -14,6 +14,8 @@ find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(AeroQt REQUIRED)
 
+add_compile_options(-g)
+
 add_executable(controlpanel
     src/main.cpp
     src/ui/MainWindow.cpp
