@@ -1,5 +1,6 @@
 #include "InstalledUpdatesPage.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -12,14 +13,10 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QHeaderView>
-#include <QScrollBar>
-#include <QApplication>
 #include <QDate>
 #include <QColor>
 #include <QRegularExpression>
 #include <QPushButton>
-#include <QtConcurrent>
-#include <QFutureWatcher>
 #include <algorithm>
 
 // Data gathering
@@ -100,176 +97,88 @@ QList<InstalledUpdatesPage::UpdateInfo> InstalledUpdatesPage::gatherUpdates()
 }
 
 // Sidebar entries
-QStringList InstalledUpdatesPage::sidebarLinks()
+QList<SidebarLink> InstalledUpdatesPage::sidebarLinks()
 {
-    return { "Control Panel Home", "Uninstall a program",
-             "Turn Linux features on or off" };
+    return {
+        Nav::to("Uninstall a program", PageId::ProgramsFeatures),
+        Nav::plain("Turn Linux features on or off"),
+    };
 }
 
-QStringList InstalledUpdatesPage::sidebarSeeAlso()
+QList<SidebarLink> InstalledUpdatesPage::sidebarSeeAlso()
 {
     return {};
 }
 
 // Page
-InstalledUpdatesPage::InstalledUpdatesPage(QScrollArea *sidebar, QWidget *parent)
+InstalledUpdatesPage::InstalledUpdatesPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
+    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/0);
+    // The list frame (command bar + tree + status strip) is full-bleed, so the
+    // column itself carries no horizontal padding; only the header text below is
+    // indented, via its own inset sub-layout.
+    contentV->setContentsMargins(0, 18, 0, 0);
 
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 0);
-    contentV->setSpacing(0);
-
-    // Title + instruction.
-    auto *title = new QLabel("Uninstall an update");
-    {
-        QFont f = title->font();
-        f.setPointSize(12);
-        title->setFont(f);
-    }
-    title->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(title);
-    contentV->addSpacing(8);
-
-    auto *subtitle = new QLabel(
-        "To uninstall an update, select it from the list and then click Uninstall or Change.");
-    {
-        QFont f = subtitle->font();
-        f.setPointSize(9);
-        subtitle->setFont(f);
-    }
-    subtitle->setStyleSheet("color: #000000; background: transparent;");
-    contentV->addWidget(subtitle);
+    // Title + instruction (the only indented block).
+    auto *headerV = new QVBoxLayout;
+    headerV->setContentsMargins(28, 0, 28, 0);
+    headerV->setSpacing(0);
+    headerV->addWidget(Win7::pageTitle("Uninstall an update"));
+    headerV->addSpacing(8);
+    headerV->addWidget(Win7::label(
+        "To uninstall an update, select it from the list and then click Uninstall or Change."));
+    contentV->addLayout(headerV);
     contentV->addSpacing(12);
+    contentV->addWidget(Win7::hSeparator());
 
-    auto *topSep = new QFrame;
-    topSep->setFrameShape(QFrame::HLine);
-    topSep->setStyleSheet("color: #D9D9D9;");
-    contentV->addWidget(topSep);
-
-    // "Organize" toolbar row
-    auto *toolBar = new QFrame;
-    toolBar->setObjectName("iuToolBar");
-    toolBar->setFixedHeight(28);
-    toolBar->setStyleSheet(
-        "#iuToolBar { background: #F4F7FB; border-bottom: 1px solid #D9D9D9; }");
-    auto *toolH = new QHBoxLayout(toolBar);
-    toolH->setContentsMargins(8, 0, 8, 0);
-    toolH->setSpacing(6);
-
-    auto *organize = new QLabel("Organize ▾");
-    {
-        QFont f = organize->font();
-        f.setPointSize(9);
-        organize->setFont(f);
-    }
-    organize->setStyleSheet("color: #1F1F1F; background: transparent;");
-    toolH->addWidget(organize);
+    // "Organize" command bar
+    QHBoxLayout *toolH = nullptr;
+    auto *toolBar = Win7::commandBar(&toolH);
+    toolH->addWidget(Win7::dropdownLabel("Organize"));
     toolH->addStretch(1);
-
-    auto *viewIcon = new QLabel;
-    viewIcon->setPixmap(themeIcon({"view-list-details", "view-list-text",
-                                   "view-choose"}).pixmap(16, 16));
-    toolH->addWidget(viewIcon);
-    auto *helpIcon = new QLabel;
-    helpIcon->setPixmap(themeIcon({"help-contents", "help-browser",
-                                   "system-help"}).pixmap(16, 16));
-    toolH->addWidget(helpIcon);
+    Win7::addCommandBarIcons(toolH);
     contentV->addWidget(toolBar);
 
     // Updates tree
     m_tree = new QTreeWidget;
     m_tree->setColumnCount(4);
     m_tree->setHeaderLabels({ "Name", "Program", "Version", "Publisher" });
-    m_tree->setRootIsDecorated(false);
     m_tree->setItemsExpandable(false);
-    m_tree->setIndentation(0);
-    m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_tree->setAlternatingRowColors(false);
-    m_tree->setFrameShape(QFrame::NoFrame);
-    m_tree->header()->setDefaultAlignment(Qt::AlignLeft);
-    m_tree->header()->setStretchLastSection(true);
+    Win7::configureListTree(m_tree);
     m_tree->header()->setSectionResizeMode(0, QHeaderView::Interactive);
     m_tree->header()->setSectionResizeMode(1, QHeaderView::Interactive);
     m_tree->header()->setSectionResizeMode(2, QHeaderView::Interactive);
     m_tree->setColumnWidth(0, 320);
     m_tree->setColumnWidth(1, 150);
     m_tree->setColumnWidth(2, 90);
-    {
-        // Lay the header out with the same 9pt the section stylesheet draws with,
-        // so it doesn't cache an over-tall size hint before the stylesheet polish.
-        QFont hf = m_tree->header()->font();
-        hf.setPointSize(9);
-        m_tree->header()->setFont(hf);
-    }
-    // Scope styling to the header only and force the native style back onto the
-    // scroll bars, matching the approach used on the Linux Update select tree.
-    m_tree->header()->setStyleSheet(
-        "QHeaderView::section {"
-        "  background: #F0F0F0;"
-        "  border: none;"
-        "  border-bottom: 1px solid #CCCCCC;"
-        "  border-right: 1px solid #CCCCCC;"
-        "  padding: 4px;"
-        "  font-size: 9pt;"
-        "}");
-    m_tree->verticalScrollBar()->setStyle(QApplication::style());
-    m_tree->horizontalScrollBar()->setStyle(QApplication::style());
 
     // Placeholder shown until the worker thread finishes gathering (see below).
-    auto *searching = new QTreeWidgetItem(m_tree);
-    searching->setFirstColumnSpanned(true);
-    searching->setTextAlignment(0, Qt::AlignHCenter);
-    searching->setText(0, "Searching for installed updates...");
-    searching->setFlags(Qt::ItemIsEnabled);
+    Win7::addTreePlaceholder(m_tree, "Searching for installed updates...");
     contentV->addWidget(m_tree, 1);
 
     // Status bar: item count
-    auto *statusBar = new QFrame;
-    statusBar->setObjectName("iuStatusBar");
-    statusBar->setFixedHeight(36);
-    statusBar->setStyleSheet(
-        "#iuStatusBar { background: #F4F7FB; border-top: 1px solid #D9D9D9; }");
-    auto *statusH = new QHBoxLayout(statusBar);
-    statusH->setContentsMargins(10, 0, 10, 0);
-    statusH->setSpacing(8);
+    QHBoxLayout *statusH = nullptr;
+    auto *statusBar = Win7::statusPanel(36, &statusH);
 
     auto *statusIcon = new QLabel;
     statusIcon->setPixmap(themeIcon({"system-software-update",
                                      "preferences-system"}).pixmap(24, 24));
     statusH->addWidget(statusIcon);
 
-    m_countLbl = new QLabel("0 items");
-    {
-        QFont f = m_countLbl->font();
-        f.setPointSize(9);
-        m_countLbl->setFont(f);
-    }
-    m_countLbl->setStyleSheet("color: #1F1F1F; background: transparent;");
+    m_countLbl = Win7::label("0 items", 9, "#1F1F1F");
     statusH->addWidget(m_countLbl);
     statusH->addStretch(1);
     contentV->addWidget(statusBar);
-
-    root->addWidget(contentWrap, 1);
 
     // Navigate first, gather second: the package query shells out to pacman and
     // can take a while, so run it on a worker thread and populate when it lands.
     // The page is already on screen with the "Searching..." placeholder by then.
     m_tree->setCursor(Qt::BusyCursor);
-    auto *watcher = new QFutureWatcher<QList<UpdateInfo>>(this);
-    connect(watcher, &QFutureWatcher<QList<UpdateInfo>>::finished, this,
-            [this, watcher]() {
-        populate(watcher->result());
-        watcher->deleteLater();
+    Win7::runAsync(this, &InstalledUpdatesPage::gatherUpdates,
+                   [this](const QList<UpdateInfo> &updates) {
+        populate(updates);
     });
-    watcher->setFuture(QtConcurrent::run(&InstalledUpdatesPage::gatherUpdates));
 }
 
 void InstalledUpdatesPage::populate(const QList<UpdateInfo> &updatesIn)
@@ -316,9 +225,7 @@ void InstalledUpdatesPage::populate(const QList<UpdateInfo> &updatesIn)
         group->setText(0, QString("%1 (%2)").arg(repo).arg(items.size()));
         group->setForeground(0, QColor("#1F4E99"));
         group->setFlags(Qt::ItemIsEnabled);   // header: not selectable
-        QFont gf = group->font(0);
-        gf.setPointSize(9);
-        group->setFont(0, gf);
+        Win7::setItemPointSize(group);
 
         for (const UpdateInfo &u : items) {
             auto *child = new QTreeWidgetItem(group);
@@ -327,11 +234,7 @@ void InstalledUpdatesPage::populate(const QList<UpdateInfo> &updatesIn)
             child->setText(1, u.name);
             child->setText(2, u.version);
             child->setText(3, u.publisher);
-            for (int c = 0; c < 4; ++c) {
-                QFont cf = child->font(c);
-                cf.setPointSize(9);
-                child->setFont(c, cf);
-            }
+            Win7::setItemPointSize(child);
             ++totalItems;
         }
     }

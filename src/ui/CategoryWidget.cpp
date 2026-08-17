@@ -1,5 +1,6 @@
 #include "CategoryWidget.h"
 #include "IconHelper.h"
+#include "Branding.h"
 
 #include <QLabel>
 #include <QVBoxLayout>
@@ -35,7 +36,8 @@ CategoryWidget::CategoryWidget(const CategoryItem &item, QWidget *parent)
     textBlock->setSpacing(0);
     textBlock->setContentsMargins(0, 0, 0, 0);
 
-    auto *titleLabel = new QLabel(item.title);
+    // Display the branded wording; m_title stays canonical for routing.
+    auto *titleLabel = new QLabel(Branding::brand(item.title));
     QFont titleFont = titleLabel->font();
     titleFont.setPointSize(11);
     titleLabel->setFont(titleFont);
@@ -49,7 +51,7 @@ CategoryWidget::CategoryWidget(const CategoryItem &item, QWidget *parent)
     textBlock->addWidget(titleLabel);
 
     for (const QString &task : item.tasks) {
-        auto *taskLabel = new QLabel(task);
+        auto *taskLabel = new QLabel(Branding::brand(task));
         QFont taskFont = taskLabel->font();
         taskFont.setPointSize(9);
         taskLabel->setFont(taskFont);

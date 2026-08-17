@@ -1,5 +1,7 @@
 #include "PerformancePage.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
+#include "Branding.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -30,56 +32,42 @@ QString fmt1(double v) { return QLocale::c().toString(v, 'f', 1); }
 
 } // namespace
 
-QStringList PerformancePage::sidebarLinks()
+QList<SidebarLink> PerformancePage::sidebarLinks()
 {
     return {
-        "Adjust visual effects",
-        "Adjust indexing options",
-        "Adjust power settings",
-        "Open disk cleanup",
-        "Advanced tools",
+        Nav::plain("Adjust visual effects"),
+        Nav::plain("Adjust indexing options"),
+        Nav::plain("Adjust power settings"),
+        Nav::plain("Open disk cleanup"),
+        Nav::plain("Advanced tools"),
     };
 }
 
-QStringList PerformancePage::sidebarSeeAlso()
+QList<SidebarLink> PerformancePage::sidebarSeeAlso()
 {
-    return { "Action Center" };
+    return { Nav::to("Action Center", PageId::ActionCenter) };
 }
 
-PerformancePage::PerformancePage(QScrollArea *sidebar, QWidget *parent)
+PerformancePage::PerformancePage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
     m_bench = new WeiBenchmark(this);
 
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
-
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *v = new QVBoxLayout(contentWrap);
-    v->setContentsMargins(28, 16, 28, 20);
-    v->setSpacing(0);
+    auto *v = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+                                 /*fixedWidth=*/-1, /*topMargin=*/16);
 
     auto linkStyle = QStringLiteral(
         "QLabel { color: #1F4E99; background: transparent; }"
         "QLabel:hover { color: #0033AA; }");
 
     // Title + subtitle
-    auto *title = new QLabel("Rate and improve your computer's performance");
-    { QFont f = title->font(); f.setPointSize(13); title->setFont(f); }
-    title->setStyleSheet("color: #1A5DAB; background: transparent;");
-    v->addWidget(title);
+    v->addWidget(Win7::pageTitle("Rate and improve your computer's performance",
+                                 13, "#1A5DAB"));
     v->addSpacing(12);
 
-    auto *subtitle = new QLabel(
+    v->addWidget(Win7::label(Branding::brand(
         "The Linux Experience Index assesses key system components on a scale "
-        "of 1.0 to 9.9.");
-    { QFont f = subtitle->font(); f.setPointSize(9); subtitle->setFont(f); }
-    subtitle->setStyleSheet("color: #000000; background: transparent;");
-    v->addWidget(subtitle);
+        "of 1.0 to 9.9.")));
     v->addSpacing(14);
 
     // Yellow "not yet established" banner (unrated only)
@@ -90,8 +78,8 @@ PerformancePage::PerformancePage(QScrollArea *sidebar, QWidget *parent)
     auto *bn = new QHBoxLayout(m_banner);
     bn->setContentsMargins(10, 5, 6, 5);
     bn->setSpacing(8);
-    auto *bannerText = new QLabel(
-        "Your Linux Experience Index has not yet been established.");
+    auto *bannerText = new QLabel(Branding::brand(
+        "Your Linux Experience Index has not yet been established."));
     { QFont f = bannerText->font(); f.setPointSize(9); bannerText->setFont(f); }
     bannerText->setStyleSheet("color: #000000; background: transparent;");
     bn->addWidget(bannerText, 0, Qt::AlignVCenter);
@@ -150,7 +138,7 @@ PerformancePage::PerformancePage(QScrollArea *sidebar, QWidget *parent)
         name->setStyleSheet("color: #1A1A1A; background: transparent;");
         table->addWidget(name, row, 0, Qt::AlignVCenter);
 
-        auto *rated = new QLabel(kComponents[i].rated);
+        auto *rated = new QLabel(Branding::brand(kComponents[i].rated));
         QFont rf = rated->font(); rf.setPointSize(9); rated->setFont(rf);
         rated->setWordWrap(true);
         rated->setStyleSheet("color: #000000; background: transparent;");
@@ -333,7 +321,6 @@ PerformancePage::PerformancePage(QScrollArea *sidebar, QWidget *parent)
     v->addLayout(bottomRow);
 
     v->addStretch(1);
-    root->addWidget(contentWrap, 1);
 
     // Engine wiring
     connect(m_bench, &WeiBenchmark::progress, this,
@@ -428,7 +415,7 @@ void PerformancePage::populate(const WeiResult &r)
     m_scoresCurrent->setText(
         QStringLiteral("Your scores are current\nLast update: %1").arg(when));
 
-    m_detailLabel->setText(QString(
+    m_detailLabel->setText(Branding::brand(QString(
         "Linux Experience Index - raw measured metrics\n"
         "Assessed: %1\n"
         "\n"
@@ -445,7 +432,7 @@ void PerformancePage::populate(const WeiResult &r)
         .arg(r.graphicsFps, 0, 'f', 1).arg(fmt1(r.graphicsScore))
         .arg(r.gamingFps, 0, 'f', 1).arg(fmt1(r.gamingScore))
         .arg(r.diskReadMBs, 0, 'f', 0).arg(fmt1(r.diskScore))
-        .arg(fmt1(r.baseScore)));
+        .arg(fmt1(r.baseScore))));
 }
 
 void PerformancePage::onRateClicked()
@@ -458,7 +445,7 @@ void PerformancePage::onRateClicked()
     // left-aligned phase title on its own shaded header band, the running-time
     // note below, a plain (textless) green bar, then a right-aligned Cancel.
     m_dlg = new QDialog(this);
-    m_dlg->setWindowTitle("Linux Experience Index");
+    m_dlg->setWindowTitle(Branding::brand("Linux Experience Index"));
     m_dlg->setModal(true);
     m_dlg->setFixedWidth(400);
 

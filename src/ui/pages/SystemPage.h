@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QString>
 #include <QStringList>
+#include "PageId.h"
 
 class QScrollArea;
 class QGridLayout;
@@ -16,16 +17,21 @@ class SystemPage : public QWidget {
     Q_OBJECT
 
 public:
-    explicit SystemPage(QScrollArea *sidebar, QWidget *parent = nullptr);
+    explicit SystemPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QStringList sidebarLinks();
-    static QStringList sidebarSeeAlso();
+    static QList<SidebarLink> sidebarLinks();
+    static QList<SidebarLink> sidebarSeeAlso();
 
 signals:
     // Emitted when the "Rating" row is clicked. MainWindow routes this to the
     // Performance Information and Tools (Linux Experience Index) page.
     void performanceRequested();
+
+    // Emitted after the "Linver configuration" dialog (opened from the
+    // distributor logo) is accepted. MainWindow re-navigates to this page so the
+    // new branding takes effect.
+    void brandingChanged();
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -34,6 +40,8 @@ private:
     // Live system facts, collected once in the constructor.
     struct SysInfo {
         QString edition;        // distro pretty name, e.g. "CachyOS"
+        QString editionShort;   // distro NAME (no version), e.g. "CachyOS"
+        QString vendor;         // copyright holder / developer org, e.g. "Fedora Project"
         QString kernel;         // kernel name + release, e.g. "Linux 7.0.11"
         QString logoIcon;       // theme icon name for the distro logo
         QString processor;      // CPU model name
@@ -55,4 +63,5 @@ private:
                        bool valueIsLink = false);
 
     QLabel *m_ratingLabel = nullptr;
+    QLabel *m_logoLabel = nullptr;   // clickable distributor logo -> config dialog
 };

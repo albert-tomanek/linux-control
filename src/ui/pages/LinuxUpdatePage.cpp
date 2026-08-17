@@ -1,5 +1,7 @@
 #include "LinuxUpdatePage.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
+#include "Branding.h"
 
 #include <QScrollArea>
 #include <QMessageBox>
@@ -13,8 +15,6 @@
 #include <QPropertyAnimation>
 #include <QGraphicsOpacityEffect>
 #include <QTimer>
-#include <QApplication>
-#include <QScrollBar>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QStackedWidget>
@@ -28,26 +28,32 @@
 #include <QDir>
 #include <QRegularExpression>
 
-QStringList LinuxUpdatePage::sidebarLinks()
+QList<SidebarLink> LinuxUpdatePage::sidebarLinks()
 {
+    // "Check for updates" is handled specially by MainWindow (it triggers this
+    // page's own refresh rather than navigating away), so it carries no target.
     return {
-        "Check for updates",
-        "Change settings",
-        "View update history",
-        "Restore hidden updates",
-        "Updates: frequently asked questions",
+        Nav::applet("Check for updates", "check-for-updates"),
+        Nav::plain("Change settings"),
+        Nav::plain("View update history"),
+        Nav::plain("Restore hidden updates"),
+        Nav::plain("Updates: frequently asked questions"),
     };
 }
 
-QStringList LinuxUpdatePage::sidebarSeeAlso()
+QList<SidebarLink> LinuxUpdatePage::sidebarSeeAlso()
 {
-    return { "Installed Updates" };
+    return { Nav::to("Installed Updates", PageId::InstalledUpdates) };
 }
 
-LinuxUpdatePage::LinuxUpdatePage(QScrollArea *sidebar, QWidget *parent)
+LinuxUpdatePage::LinuxUpdatePage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
-    setStyleSheet("background: #FFFFFF;");
+    // ID-scoped backgrounds throughout: a declaration-only stylesheet acts as
+    // `* { ... }`, matching every descendant and forcing them (scroll bars
+    // included) into stylesheet rendering instead of the platform style.
+    setObjectName("luPage");
+    setStyleSheet("#luPage { background: #FFFFFF; }");
     auto *root = new QHBoxLayout(this);
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
@@ -58,20 +64,22 @@ LinuxUpdatePage::LinuxUpdatePage(QScrollArea *sidebar, QWidget *parent)
     root->addWidget(m_stack);
 
     auto *statusView = new QWidget;
-    statusView->setStyleSheet("background: #FFFFFF;");
+    statusView->setObjectName("luStatusView");
+    statusView->setStyleSheet("#luStatusView { background: #FFFFFF; }");
     auto *statusRoot = new QHBoxLayout(statusView);
     statusRoot->setContentsMargins(0, 0, 0, 0);
     statusRoot->setSpacing(0);
     statusRoot->addWidget(sidebar);
 
     auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
+    contentWrap->setObjectName("luContentWrap");
+    contentWrap->setStyleSheet("#luContentWrap { background: #FFFFFF; }");
     auto *contentV = new QVBoxLayout(contentWrap);
     contentV->setContentsMargins(28, 20, 28, 20);
     contentV->setSpacing(0);
 
     // Page title
-    auto *pageTitle = new QLabel("Linux Update");
+    auto *pageTitle = new QLabel(Branding::brand("Linux Update"));
     {
         QFont f = pageTitle->font();
         f.setPointSize(11);
@@ -250,7 +258,8 @@ LinuxUpdatePage::LinuxUpdatePage(QScrollArea *sidebar, QWidget *parent)
 
     QLabel *recvRight = nullptr;
     makeInfoRow("You receive updates:", &recvRight);
-    recvRight->setText("For Linux and other products from pacman and the AUR");
+    recvRight->setText(
+        Branding::brand("For Linux and other products from pacman and the AUR"));
 
     contentV->addSpacing(16);
 
@@ -359,7 +368,7 @@ void LinuxUpdatePage::setNoUpdatesState()
     applyStatusBorder("#1DA51D");
     resetStatusWidgets();
     m_iconLabel->setPixmap(themeIcon({"security-high", "emblem-default", "dialog-ok-apply"}).pixmap(48, 48));
-    m_titleLabel->setText("Linux is up to date");
+    m_titleLabel->setText(Branding::brand("Linux is up to date"));
     m_subLabel->setText("There are no available updates for your computer.");
 }
 
@@ -580,14 +589,16 @@ QWidget *LinuxUpdatePage::buildSelectView()
     m_selFilter = (nImp > 0) ? 0 : 1;
 
     auto *view = new QWidget;
-    view->setStyleSheet("background: #FFFFFF;");
+    view->setObjectName("luSelectView");
+    view->setStyleSheet("#luSelectView { background: #FFFFFF; }");
     auto *root = new QVBoxLayout(view);
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
 
     // Header
     auto *headerBar = new QWidget;
-    headerBar->setStyleSheet("background: #FFFFFF;");
+    headerBar->setObjectName("luSelectHeader");
+    headerBar->setStyleSheet("#luSelectHeader { background: #FFFFFF; }");
     auto *hh = new QHBoxLayout(headerBar);
     hh->setContentsMargins(28, 18, 28, 12);
     auto *hdr = new QLabel("Select the updates you want to install");
@@ -608,7 +619,8 @@ QWidget *LinuxUpdatePage::buildSelectView()
 
     // Body: category sidebar | table | details
     auto *body = new QWidget;
-    body->setStyleSheet("background: #FFFFFF;");
+    body->setObjectName("luSelectBody");
+    body->setStyleSheet("#luSelectBody { background: #FFFFFF; }");
     auto *bodyH = new QHBoxLayout(body);
     bodyH->setContentsMargins(0, 0, 0, 0);
     bodyH->setSpacing(0);
@@ -646,39 +658,12 @@ QWidget *LinuxUpdatePage::buildSelectView()
     m_selTree = new QTreeWidget;
     m_selTree->setColumnCount(2);
     m_selTree->setHeaderLabels({ "Name", "Size" });
+    Win7::configureListTree(m_selTree);
+    // Unlike the flat ribbon lists, this tree keeps its expandable group node.
     m_selTree->setRootIsDecorated(true);
-    m_selTree->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_selTree->setAlternatingRowColors(false);
-    m_selTree->setFrameShape(QFrame::NoFrame);
-    m_selTree->header()->setDefaultAlignment(Qt::AlignLeft);
+    m_selTree->setIndentation(20);
     m_selTree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_selTree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    // Lay the header out with the same 9pt the section stylesheet draws with.
-    // Without this the header caches a size hint based on the larger default
-    // font before the stylesheet is polished, so it renders too tall until
-    // some later relayout (e.g. switching category) recomputes it.
-    {
-        QFont hf = m_selTree->header()->font();
-        hf.setPointSize(9);
-        m_selTree->header()->setFont(hf);
-    }
-    // Style only the header section, not the whole tree. Under the app-wide
-    // Aero stylesheet, a widget-level setStyleSheet() drags the tree's scroll
-    // bars into the boxy stylesheet look; scoping the rules to the header and
-    // forcing the application's base style back onto the scroll bars keeps them
-    // native.
-    m_selTree->header()->setStyleSheet(
-        "QHeaderView::section {"
-        "  background: #F0F0F0;"
-        "  border: none;"
-        "  border-bottom: 1px solid #CCCCCC;"
-        "  border-right: 1px solid #CCCCCC;"
-        "  padding: 4px;"
-        "  font-size: 9pt;"
-        "}"
-    );
-    m_selTree->verticalScrollBar()->setStyle(QApplication::style());
-    m_selTree->horizontalScrollBar()->setStyle(QApplication::style());
 
     connect(m_selTree, &QTreeWidget::itemChanged, this,
         [this](QTreeWidgetItem *it, int col) {
@@ -721,8 +706,10 @@ QWidget *LinuxUpdatePage::buildSelectView()
 
     // Details panel.
     auto *detail = new QWidget;
+    detail->setObjectName("luSelectDetail");
     detail->setFixedWidth(300);
-    detail->setStyleSheet("background: #FFFFFF; border-left: 1px solid #E0E0E0;");
+    detail->setStyleSheet(
+        "#luSelectDetail { background: #FFFFFF; border-left: 1px solid #E0E0E0; }");
     auto *detV = new QVBoxLayout(detail);
     detV->setContentsMargins(12, 12, 12, 12);
     detV->setSpacing(8);
@@ -771,7 +758,8 @@ QWidget *LinuxUpdatePage::buildSelectView()
     root->addWidget(botSep);
 
     auto *footer = new QWidget;
-    footer->setStyleSheet("background: #F4F4F4;");
+    footer->setObjectName("luSelectFooter");
+    footer->setStyleSheet("#luSelectFooter { background: #F4F4F4; }");
     auto *fh = new QHBoxLayout(footer);
     fh->setContentsMargins(14, 8, 14, 8);
     fh->setSpacing(8);
@@ -839,7 +827,9 @@ void LinuxUpdatePage::populateSelectTable()
     // Group node. An empty UserRole marks it as the group (vs. a package row).
     // ItemIsAutoTristate makes its checkbox reflect and drive the children.
     auto *group = new QTreeWidgetItem(m_selTree);
-    group->setText(0, QString("Linux (%1)").arg(filtered.size()));
+    group->setText(0, QStringLiteral("%1 (%2)")
+                          .arg(Branding::os())
+                          .arg(filtered.size()));
     {
         QFont f = group->font(0);
         f.setBold(true);

@@ -1,5 +1,8 @@
 #include "FirewallPage.h"
+#include "ConfFile.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
+#include "Branding.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -10,56 +13,8 @@
 #include <QFont>
 #include <QFile>
 #include <QHostInfo>
-#include <QMouseEvent>
 
-#include <functional>
-
-// A bare widget that runs a callback when clicked. Used for the collapsible
-// panel headers so the whole header strip toggles the body, mirroring the way
-// Windows' firewall network sections expand/collapse. No signals are needed, so
-// this stays a plain QWidget (no Q_OBJECT / moc).
-class ClickableWidget : public QWidget {
-public:
-    using QWidget::QWidget;
-    std::function<void()> onClick;
-
-protected:
-    void mousePressEvent(QMouseEvent *event) override {
-        if (event->button() == Qt::LeftButton && onClick)
-            onClick();
-        QWidget::mousePressEvent(event);
-    }
-};
-
-// Data gathering
-// Read a single shell-style `KEY=value` field out of a config file, stripping
-// surrounding single or double quotes. ufw's config files (/etc/ufw/ufw.conf,
-// /etc/default/ufw) are world-readable sourced shell fragments, so this is the
-// same state KDE's firewall module reads, no root required.
-static QString confField(const QString &path, const QString &key)
-{
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-        return QString();
-
-    const QString text = QString::fromUtf8(f.readAll());
-    const QList<QStringView> lines = QStringView(text).split(u'\n');
-    const QString prefix = key + QLatin1Char('=');
-    for (const QStringView &raw : lines) {
-        const QStringView line = raw.trimmed();
-        if (line.startsWith(QLatin1Char('#')))         // skip comments
-            continue;
-        if (!line.startsWith(prefix))
-            continue;
-        QString val = line.mid(prefix.size()).trimmed().toString();
-        if (val.size() >= 2
-            && ((val.startsWith('"') && val.endsWith('"'))
-                || (val.startsWith('\'') && val.endsWith('\''))))
-            val = val.mid(1, val.size() - 2);
-        return val;
-    }
-    return QString();
-}
+using Win7::ClickableWidget;
 
 // True when the machine has a default route (i.e. is on a network). Mirrors the
 // Network and Sharing Center's reading of /proc/net/route: the default route is
@@ -99,15 +54,15 @@ FirewallPage::FwInfo FirewallPage::gatherInfo()
 {
     FwInfo fw;
 
-    fw.enabled = confField(QStringLiteral("/etc/ufw/ufw.conf"),
+    fw.enabled = readConfField(QStringLiteral("/etc/ufw/ufw.conf"),
                            QStringLiteral("ENABLED")).compare(
                                QStringLiteral("yes"), Qt::CaseInsensitive) == 0;
-    fw.logLevel = confField(QStringLiteral("/etc/ufw/ufw.conf"),
+    fw.logLevel = readConfField(QStringLiteral("/etc/ufw/ufw.conf"),
                             QStringLiteral("LOGLEVEL"));
 
-    fw.inputPolicy  = confField(QStringLiteral("/etc/default/ufw"),
+    fw.inputPolicy  = readConfField(QStringLiteral("/etc/default/ufw"),
                                 QStringLiteral("DEFAULT_INPUT_POLICY")).toUpper();
-    fw.outputPolicy = confField(QStringLiteral("/etc/default/ufw"),
+    fw.outputPolicy = readConfField(QStringLiteral("/etc/default/ufw"),
                                 QStringLiteral("DEFAULT_OUTPUT_POLICY")).toUpper();
     if (fw.inputPolicy.isEmpty())
         fw.inputPolicy = QStringLiteral("DROP");
@@ -122,23 +77,23 @@ FirewallPage::FwInfo FirewallPage::gatherInfo()
 }
 
 // Sidebar
-QStringList FirewallPage::sidebarLinks()
+QList<SidebarLink> FirewallPage::sidebarLinks()
 {
     return {
-        "Allow a program or feature through Linux Firewall",
-        "Change notification settings",
-        "Turn Linux Firewall on or off",
-        "Restore defaults",
-        "Advanced settings",
-        "Troubleshoot my network",
+        Nav::plain("Allow a program or feature through Linux Firewall"),
+        Nav::plain("Change notification settings"),
+        Nav::plain("Turn Linux Firewall on or off"),
+        Nav::plain("Restore defaults"),
+        Nav::plain("Advanced settings"),
+        Nav::plain("Troubleshoot my network"),
     };
 }
 
-QStringList FirewallPage::sidebarSeeAlso()
+QList<SidebarLink> FirewallPage::sidebarSeeAlso()
 {
     return {
-        "Action Center",
-        "Network and Sharing Center",
+        Nav::to("Action Center", PageId::ActionCenter),
+        Nav::to("Network and Sharing Center", PageId::NetworkSharing),
     };
 }
 
@@ -161,9 +116,9 @@ static QString incomingText(const QString &policy)
 static QString notifyText(const QString &logLevel)
 {
     if (logLevel.compare(QLatin1String("off"), Qt::CaseInsensitive) == 0)
-        return QStringLiteral("Do not notify me when Linux Firewall blocks a "
-                              "new program");
-    return QStringLiteral("Notify me when Linux Firewall blocks a new program");
+        return Branding::brand("Do not notify me when Linux Firewall blocks a "
+                               "new program");
+    return Branding::brand("Notify me when Linux Firewall blocks a new program");
 }
 
 QWidget *FirewallPage::buildLocationPanel(const QString &title,
@@ -204,29 +159,16 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
     headerH->addSpacing(8);
     headerH->addWidget(shield, 0, Qt::AlignVCenter);
 
-    auto *titleLabel = new QLabel(title);
-    {
-        QFont f = titleLabel->font();
-        f.setPointSize(11);
-        titleLabel->setFont(f);
-    }
-    titleLabel->setStyleSheet("color: #1A5FB4; background: transparent;");
     headerH->addSpacing(6);
-    headerH->addWidget(titleLabel, 0, Qt::AlignVCenter);
+    headerH->addWidget(Win7::label(title, 11, "#1A5FB4"), 0, Qt::AlignVCenter);
     headerH->addStretch(1);
 
-    auto *state = new QLabel(connState);
-    {
-        QFont f = state->font();
-        f.setPointSize(11);
-        state->setFont(f);
-    }
-    state->setStyleSheet("color: #2D2D2D; background: transparent;");
-    headerH->addWidget(state, 0, Qt::AlignVCenter);
+    headerH->addWidget(Win7::label(connState, 11, "#2D2D2D"), 0, Qt::AlignVCenter);
 
-    auto *chevron = new QLabel(expanded ? QString::fromUtf8("▲")
-                                        : QString::fromUtf8("▼"));
-    chevron->setStyleSheet("color: #555555; background: transparent; font-size: 7pt;");
+    // The shared round Aero expander. The whole header strip is the click
+    // target, so the button itself lets clicks fall through to it.
+    auto *chevron = new Win7::ChevronButton(/*interactive=*/false);
+    chevron->setChecked(expanded);
     headerH->addSpacing(8);
     headerH->addWidget(chevron, 0, Qt::AlignVCenter);
 
@@ -235,10 +177,7 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
 
     // Body: caption line + the status grid. Built regardless of the initial
     // state so the header can toggle it on click; visibility is set at the end.
-    auto *sep = new QFrame;
-    sep->setFrameShape(QFrame::HLine);
-    sep->setFixedHeight(1);
-    sep->setStyleSheet("QFrame { background: #E2E2E2; border: none; }");
+    auto *sep = Win7::hairline("#E2E2E2");
     panelV->addWidget(sep);
 
     // Body has no horizontal margin so the dividers below span the full panel
@@ -253,26 +192,15 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
     bodyV->setContentsMargins(0, 4, 0, 14);
     bodyV->setSpacing(0);
 
-    auto *caption = new QLabel(
+    auto *caption = Win7::bodyLabel(
         "Linux Firewall (ufw) applies one set of rules to every network. Unlike "
         "Windows, Linux has no separate Home, Work, or Public network profiles.");
-    {
-        QFont f = caption->font();
-        f.setPointSize(9);
-        caption->setFont(f);
-    }
-    caption->setWordWrap(true);
     caption->setContentsMargins(kLeftInset, 0, kRightInset, 0);
-    caption->setStyleSheet("color: #000000; background: transparent;");
     bodyV->addWidget(caption);
     bodyV->addSpacing(12);
 
     // Divider between the caption and the status grid, as in the Windows panel.
-    auto *sep2 = new QFrame;
-    sep2->setFrameShape(QFrame::HLine);
-    sep2->setFixedHeight(1);
-    sep2->setStyleSheet("QFrame { background: #E2E2E2; border: none; }");
-    bodyV->addWidget(sep2);
+    bodyV->addWidget(Win7::hairline("#E2E2E2"));
     bodyV->addSpacing(14);
 
     auto *grid = new QGridLayout;
@@ -282,38 +210,17 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
     grid->setColumnMinimumWidth(0, 200);
     grid->setColumnStretch(1, 1);
 
-    auto makeLabel = [](const QString &text, bool link = false) {
-        auto *l = new QLabel(text);
-        QFont f = l->font();
-        f.setPointSize(9);
-        l->setFont(f);
-        l->setWordWrap(true);
-        // Align via the label itself, not the grid's addWidget alignment flag:
-        // passing an alignment flag to QGridLayout::addWidget suppresses
-        // height-for-width, so a word-wrapped label only gets one line of height
-        // and any wrapped lines are clipped ("Notify me when Linux" → nothing).
-        l->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-        if (link) {
-            l->setCursor(Qt::PointingHandCursor);
-            l->setStyleSheet(
-                "QLabel { color: #1F4E99; background: transparent; }"
-                "QLabel:hover { color: #0033AA; }");
-        } else {
-            l->setStyleSheet("color: #000000; background: transparent;");
-        }
-        return l;
-    };
-
     int r = 0;
-    grid->addWidget(makeLabel("Linux Firewall state:"), r, 0);
-    grid->addWidget(makeLabel(info.enabled ? "On" : "Off"), r, 1);
+    grid->addWidget(Win7::bodyLabel(Branding::brand("Linux Firewall state:")),
+                    r, 0);
+    grid->addWidget(Win7::bodyLabel(info.enabled ? "On" : "Off"), r, 1);
     ++r;
 
-    grid->addWidget(makeLabel("Incoming connections:"), r, 0);
-    grid->addWidget(makeLabel(incomingText(info.inputPolicy)), r, 1);
+    grid->addWidget(Win7::bodyLabel("Incoming connections:"), r, 0);
+    grid->addWidget(Win7::bodyLabel(incomingText(info.inputPolicy)), r, 1);
     ++r;
 
-    grid->addWidget(makeLabel("Active networks:"), r, 0);
+    grid->addWidget(Win7::bodyLabel("Active networks:"), r, 0);
     // Icon + network-name cell.
     {
         auto *cell = new QWidget;
@@ -328,16 +235,16 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
                             .pixmap(16, 16));
         icon->setStyleSheet("background: transparent;");
         h->addWidget(icon, 0, Qt::AlignVCenter);
-        h->addWidget(makeLabel(info.netConnected ? info.networkName
-                                                 : QStringLiteral("None")),
+        h->addWidget(Win7::bodyLabel(info.netConnected ? info.networkName
+                                                       : QStringLiteral("None")),
                      0, Qt::AlignVCenter);
         h->addStretch(1);
         grid->addWidget(cell, r, 1, Qt::AlignLeft | Qt::AlignTop);
     }
     ++r;
 
-    grid->addWidget(makeLabel("Notification state:"), r, 0);
-    grid->addWidget(makeLabel(notifyText(info.logLevel)), r, 1);
+    grid->addWidget(Win7::bodyLabel("Notification state:"), r, 0);
+    grid->addWidget(Win7::bodyLabel(notifyText(info.logLevel)), r, 1);
     ++r;
 
     bodyV->addLayout(grid);
@@ -348,7 +255,7 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
     auto applyState = [body, sep, chevron](bool open) {
         sep->setVisible(open);
         body->setVisible(open);
-        chevron->setText(open ? QString::fromUtf8("▲") : QString::fromUtf8("▼"));
+        chevron->setChecked(open);
     };
     applyState(expanded);
 
@@ -363,58 +270,28 @@ QWidget *FirewallPage::buildLocationPanel(const QString &title,
 }
 
 // Page
-FirewallPage::FirewallPage(QScrollArea *sidebar, QWidget *parent)
+FirewallPage::FirewallPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
     const FwInfo info = gatherInfo();
 
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
+    // Windows 7 lays the content out at a fixed width and leaves the rest of
+    // the window blank on the right rather than stretching to fill it.
+    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+                                        /*fixedWidth=*/700);
 
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 20);
-    contentV->setSpacing(0);
-
-    // Page title
-    auto *pageTitle =
-        new QLabel("Help protect your computer with Linux Firewall");
-    {
-        QFont f = pageTitle->font();
-        f.setPointSize(12);
-        pageTitle->setFont(f);
-    }
-    pageTitle->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(pageTitle);
+    contentV->addWidget(
+        Win7::pageTitle(Branding::brand(
+            "Help protect your computer with Linux Firewall")));
     contentV->addSpacing(10);
 
-    auto *blurb = new QLabel(
+    contentV->addWidget(Win7::bodyLabel(Branding::brand(
         "Linux Firewall can help prevent hackers or malicious software from "
-        "gaining access to your computer through the Internet or a network.");
-    {
-        QFont f = blurb->font();
-        f.setPointSize(9);
-        blurb->setFont(f);
-    }
-    blurb->setWordWrap(true);
-    blurb->setStyleSheet("color: #000000; background: transparent;");
-    contentV->addWidget(blurb);
+        "gaining access to your computer through the Internet or a network.")));
     contentV->addSpacing(10);
 
     auto addHelpLink = [&](const QString &text) {
-        auto *l = new QLabel(text);
-        QFont f = l->font();
-        f.setPointSize(9);
-        l->setFont(f);
-        l->setCursor(Qt::PointingHandCursor);
-        l->setStyleSheet(
-            "QLabel { color: #1F4E99; background: transparent; }"
-            "QLabel:hover { color: #0033AA; }");
-        contentV->addWidget(l, 0, Qt::AlignLeft);
+        contentV->addWidget(Win7::bodyLabel(text, /*link=*/true), 0, Qt::AlignLeft);
         contentV->addSpacing(4);
     };
     addHelpLink("How does a firewall help protect my computer?");
@@ -432,10 +309,4 @@ FirewallPage::FirewallPage(QScrollArea *sidebar, QWidget *parent)
         /*expanded=*/true, info));
 
     contentV->addStretch(1);
-
-    // Windows 7 lays the content out at a fixed width and leaves the rest of the
-    // window blank on the right rather than stretching to fill a wide window.
-    contentWrap->setFixedWidth(700);
-    root->addWidget(contentWrap, 0);
-    root->addStretch(1);
 }

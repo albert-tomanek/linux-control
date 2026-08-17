@@ -1,5 +1,9 @@
 #include "SystemPage.h"
+#include "Commands.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
+#include "Branding.h"
+#include "dialogs/LinverConfigDialog.h"
 #include "perf/WeiBenchmark.h"
 
 #include <QEvent>
@@ -16,6 +20,7 @@
 #include <QTextStream>
 #include <QSysInfo>
 #include <QHostInfo>
+#include <QHash>
 #include <QRegularExpression>
 #include <cmath>
 
@@ -38,6 +43,39 @@ static QString osReleaseField(const QString &key)
         }
     }
     return QString();
+}
+
+// The developer org / copyright holder for a distro, keyed by /etc/os-release
+// ID (or an ID_LIKE token). os-release has no universal vendor field, so this
+// covers the common distributions; anything unknown falls back to the distro's
+// own name at the call site.
+static QString vendorForId(const QString &id)
+{
+    static const QHash<QString, QString> vendors = {
+        { QStringLiteral("cachyos"),    QStringLiteral("CachyOS") },
+        { QStringLiteral("arch"),       QStringLiteral("Arch Linux") },
+        { QStringLiteral("fedora"),     QStringLiteral("Fedora Project") },
+        { QStringLiteral("ubuntu"),     QStringLiteral("Canonical Ltd.") },
+        { QStringLiteral("kubuntu"),    QStringLiteral("Canonical Ltd.") },
+        { QStringLiteral("debian"),     QStringLiteral("The Debian Project") },
+        { QStringLiteral("linuxmint"),  QStringLiteral("The Linux Mint Team") },
+        { QStringLiteral("manjaro"),    QStringLiteral("Manjaro Team") },
+        { QStringLiteral("endeavouros"),QStringLiteral("EndeavourOS Team") },
+        { QStringLiteral("opensuse"),           QStringLiteral("openSUSE Project") },
+        { QStringLiteral("opensuse-leap"),      QStringLiteral("openSUSE Project") },
+        { QStringLiteral("opensuse-tumbleweed"),QStringLiteral("openSUSE Project") },
+        { QStringLiteral("pop"),        QStringLiteral("System76") },
+        { QStringLiteral("gentoo"),     QStringLiteral("Gentoo Foundation") },
+        { QStringLiteral("void"),       QStringLiteral("Void Linux") },
+        { QStringLiteral("nixos"),      QStringLiteral("NixOS Contributors") },
+        { QStringLiteral("rhel"),       QStringLiteral("Red Hat, Inc.") },
+        { QStringLiteral("centos"),     QStringLiteral("The CentOS Project") },
+        { QStringLiteral("rocky"),      QStringLiteral("Rocky Enterprise Software Foundation") },
+        { QStringLiteral("almalinux"),  QStringLiteral("AlmaLinux OS Foundation") },
+        { QStringLiteral("elementary"), QStringLiteral("elementary, Inc.") },
+        { QStringLiteral("zorin"),      QStringLiteral("Zorin OS") },
+    };
+    return vendors.value(id);
 }
 
 // First matching field from /proc/cpuinfo (e.g. "model name").
@@ -73,6 +111,30 @@ SystemPage::SysInfo SystemPage::gatherInfo()
         s.edition = osReleaseField(QStringLiteral("NAME"));
     if (s.edition.isEmpty())
         s.edition = QSysInfo::prettyProductName();
+
+    // The short name (no version) drives the badge's non-full-name case and the
+    // branding dialog's dropdown label.
+    s.editionShort = osReleaseField(QStringLiteral("NAME"));
+    if (s.editionShort.isEmpty())
+        s.editionShort = s.edition;
+
+    // Copyright holder / developer org: prefer os-release's own VENDOR_NAME,
+    // then a curated ID (or ID_LIKE) lookup, then the distro name itself.
+    s.vendor = osReleaseField(QStringLiteral("VENDOR_NAME"));
+    if (s.vendor.isEmpty())
+        s.vendor = vendorForId(osReleaseField(QStringLiteral("ID")));
+    if (s.vendor.isEmpty()) {
+        const QStringList idLike =
+            osReleaseField(QStringLiteral("ID_LIKE")).split(QLatin1Char(' '),
+                                                            Qt::SkipEmptyParts);
+        for (const QString &like : idLike) {
+            s.vendor = vendorForId(like);
+            if (!s.vendor.isEmpty())
+                break;
+        }
+    }
+    if (s.vendor.isEmpty())
+        s.vendor = s.editionShort;
 
     s.kernel = QStringLiteral("%1 %2")
                    .arg(QSysInfo::kernelType().replace(0, 1,
@@ -154,37 +216,46 @@ SystemPage::SysInfo SystemPage::gatherInfo()
     return s;
 }
 
-// Clicking the "Rating" value navigates to the Linux Experience Index page.
+// Clicking the "Rating" value navigates to the Linux Experience Index page;
+// clicking the distributor logo opens the branding-configuration dialog.
 bool SystemPage::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == m_ratingLabel
-        && event->type() == QEvent::MouseButtonRelease) {
+    if (event->type() == QEvent::MouseButtonRelease) {
         auto *me = static_cast<QMouseEvent *>(event);
         if (me->button() == Qt::LeftButton) {
-            emit performanceRequested();
-            return true;
+            if (watched == m_ratingLabel) {
+                emit performanceRequested();
+                return true;
+            }
+            if (watched == m_logoLabel) {
+                const SysInfo info = gatherInfo();
+                LinverConfigDialog dlg(info.editionShort, this);
+                if (dlg.exec() == QDialog::Accepted)
+                    emit brandingChanged();
+                return true;
+            }
         }
     }
     return QWidget::eventFilter(watched, event);
 }
 
 // Sidebar
-QStringList SystemPage::sidebarLinks()
+QList<SidebarLink> SystemPage::sidebarLinks()
 {
     return {
-        "Device Manager",
-        "Remote settings",
-        "System protection",
-        "Advanced system settings",
+        Nav::command("Device Manager", kDeviceManagerCmd),
+        Nav::plain("Remote settings"),
+        Nav::plain("System protection"),
+        Nav::plain("Advanced system settings"),
     };
 }
 
-QStringList SystemPage::sidebarSeeAlso()
+QList<SidebarLink> SystemPage::sidebarSeeAlso()
 {
     return {
-        "Action Center",
-        "Linux Update",
-        "Performance Information and Tools",
+        Nav::to("Action Center", PageId::ActionCenter),
+        Nav::to("Linux Update", PageId::LinuxUpdate),
+        Nav::to("Performance Information and Tools", PageId::Performance),
     };
 }
 
@@ -248,64 +319,28 @@ QLabel *SystemPage::addInfoRow(QGridLayout *grid, int row,
 }
 
 // Page
-SystemPage::SystemPage(QScrollArea *sidebar, QWidget *parent)
+SystemPage::SystemPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
     const SysInfo info = gatherInfo();
 
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
-
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 20);
-    contentV->setSpacing(0);
+    auto *contentV = Win7::pageScaffold(this, sidebar);
 
     // Page title.
-    auto *pageTitle = new QLabel("View basic information about your computer");
-    {
-        QFont f = pageTitle->font();
-        f.setPointSize(12);
-        pageTitle->setFont(f);
-    }
-    pageTitle->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(pageTitle);
+    contentV->addWidget(
+        Win7::pageTitle("View basic information about your computer"));
     contentV->addSpacing(18);
 
-    // Section heading: the muted-blue label with a faint rule trailing off to
-    // the right on the same row. An optional `trailing` widget (e.g. a "Change
-    // settings" link) is pinned to the far right after the rule.
+    // Section heading with an optional `trailing` widget (e.g. a "Change
+    // settings" link) pinned to the far right after the rule.
     auto addHeading = [&](const QString &text, QWidget *trailing = nullptr) {
-        auto *row = new QHBoxLayout;
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(8);
-
-        auto *h = new QLabel(text);
-        QFont f = h->font();
-        f.setPointSize(9);
-        h->setFont(f);
-        h->setStyleSheet("color: #000000; background: transparent;");
-        row->addWidget(h, 0, Qt::AlignVCenter);
-
-        auto *line = new QFrame;
-        line->setFrameShape(QFrame::HLine);
-        line->setFixedHeight(1);
-        line->setStyleSheet("QFrame { background: #DDDDDD; border: none; }");
-        row->addWidget(line, 1, Qt::AlignVCenter);
-
-        if (trailing)
-            row->addWidget(trailing, 0, Qt::AlignVCenter);
-
-        contentV->addLayout(row);
+        contentV->addLayout(
+            Win7::sectionHeading(text, trailing, nullptr, "#000000"));
         contentV->addSpacing(6);
     };
 
     // Linux edition (with distro logo on the right)
-    addHeading("Linux edition");
+    addHeading(Branding::brand("Linux edition"));
 
     auto *editionRow = new QHBoxLayout;
     editionRow->setContentsMargins(14, 0, 0, 0);
@@ -320,48 +355,39 @@ SystemPage::SystemPage(QScrollArea *sidebar, QWidget *parent)
     editionCol->setContentsMargins(0, 0, 0, 0);
     editionCol->setSpacing(7);   // match the row spacing used by the info grids
 
-    auto *editionName = new QLabel(info.edition);
-    {
-        QFont f = editionName->font();
-        f.setPointSize(9);
-        editionName->setFont(f);
-    }
-    editionName->setStyleSheet("color: #000000; background: transparent;");
-    editionCol->addWidget(editionName);
-
-    auto *kernelLine = new QLabel(info.kernel);
-    {
-        QFont f = kernelLine->font();
-        f.setPointSize(9);
-        kernelLine->setFont(f);
-    }
-    kernelLine->setStyleSheet("color: #000000; background: transparent;");
-
-    auto *copyright = new QLabel(
-        QString::fromUtf8("Copyright © %1  The Linux community.  "
-                          "All rights reserved.").arg(2026));
-    {
-        QFont f = copyright->font();
-        f.setPointSize(9);
-        copyright->setFont(f);
-    }
-    copyright->setStyleSheet("color: #000000; background: transparent;");
-
-    // Order: edition name, copyright, then kernel version at the bottom.
-    editionCol->addWidget(copyright);
-    editionCol->addWidget(kernelLine);
+    // Order: edition name, copyright, then version line at the bottom. All three
+    // follow the branding choice: the real distro identity, or fake Windows 7.
+    editionCol->addWidget(Win7::label(
+        Branding::editionName(info.edition)));
+    editionCol->addWidget(Win7::label(
+        QString::fromUtf8("Copyright © %1  %2.  All rights reserved.")
+            .arg(Branding::copyrightYear())
+            .arg(Branding::copyrightHolder(info.vendor))));
+    editionCol->addWidget(Win7::label(
+        Branding::fakeBadgeActive() ? QStringLiteral("Service Pack 1")
+                                    : info.kernel));
 
     editionRow->addWidget(editionTextWrap, 1, Qt::AlignTop);
 
-    // Distro logo, mirroring the big edition badge in the reference.
-    auto *logo = new QLabel;
-    logo->setFixedSize(96, 96);
-    logo->setStyleSheet("background: transparent;");
-    logo->setPixmap(themeIcon({ info.logoIcon.toUtf8().constData(),
-                                "distributor-logo", "start-here",
-                                "computer", "preferences-system" })
-                        .pixmap(96, 96));
-    editionRow->addWidget(logo, 0, Qt::AlignTop);
+    // Distro logo (or the fake Windows flag), mirroring the big edition badge in
+    // the reference. Clicking it opens the "Linver configuration" dialog.
+    m_logoLabel = new QLabel;
+    m_logoLabel->setFixedSize(96, 96);
+    m_logoLabel->setStyleSheet("background: transparent;");
+    m_logoLabel->setCursor(Qt::PointingHandCursor);
+    m_logoLabel->setToolTip(QStringLiteral("Configure branding"));
+    if (Branding::fakeBadgeActive()) {
+        // The orb-backed Windows 7 logo. The theme only draws the orb at <=48px
+        // (its 256px raster is the bare flag), so this upscales the 48px orb.
+        m_logoLabel->setPixmap(Branding::windowsOrb(96));
+    } else {
+        m_logoLabel->setPixmap(themeIcon({ info.logoIcon.toUtf8().constData(),
+                                           "distributor-logo", "start-here",
+                                           "computer", "preferences-system" })
+                                   .pixmap(96, 96));
+    }
+    m_logoLabel->installEventFilter(this);
+    editionRow->addWidget(m_logoLabel, 0, Qt::AlignTop);
 
     contentV->addLayout(editionRow);
     contentV->addSpacing(16);
@@ -380,9 +406,10 @@ SystemPage::SystemPage(QScrollArea *sidebar, QWidget *parent)
     // always links to the Performance Information and Tools page.
     const WeiResult wei = WeiResult::load();
     const QString ratingText = wei.valid && wei.baseScore > 0.0
-        ? QStringLiteral("%1   Linux Experience Index")
+        ? QStringLiteral("%1   %2")
               .arg(wei.baseScore, 0, 'f', 1)
-        : QStringLiteral("Linux Experience Index is not available");
+              .arg(Branding::brand("Linux Experience Index"))
+        : Branding::brand("Linux Experience Index is not available");
     m_ratingLabel = addInfoRow(sysGrid, r++, "Rating:", ratingText,
                                QString(), /*valueIsLink=*/true);
     m_ratingLabel->installEventFilter(this);
@@ -411,23 +438,14 @@ SystemPage::SystemPage(QScrollArea *sidebar, QWidget *parent)
     addInfoRow(nameGrid, r++, "Workgroup:", "WORKGROUP");
 
     // "Change settings" sits at the right edge, on the "Computer name:" row.
-    auto *change = new QLabel("Change settings");
-    {
-        QFont cf = change->font();
-        cf.setPointSize(9);
-        change->setFont(cf);
-    }
-    change->setCursor(Qt::PointingHandCursor);
-    change->setStyleSheet(
-        "QLabel { color: #1F4E99; background: transparent; }"
-        "QLabel:hover { color: #0033AA; }");
-    nameGrid->addWidget(change, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
+    nameGrid->addWidget(Win7::bodyLabel("Change settings", /*link=*/true),
+                        0, 2, Qt::AlignRight | Qt::AlignVCenter);
 
     contentV->addLayout(nameGrid);
     contentV->addSpacing(16);
 
     // Linux activation
-    addHeading("Linux activation");
+    addHeading(Branding::brand("Linux activation"));
 
     auto *actGrid = new QGridLayout;
     actGrid->setContentsMargins(14, 0, 0, 0);
@@ -435,18 +453,11 @@ SystemPage::SystemPage(QScrollArea *sidebar, QWidget *parent)
     actGrid->setVerticalSpacing(7);
     actGrid->setColumnStretch(1, 1);
 
-    {
-        auto *act = new QLabel("Linux is activated");
-        QFont f = act->font();
-        f.setPointSize(9);
-        act->setFont(f);
-        act->setStyleSheet("color: #000000; background: transparent;");
-        actGrid->addWidget(act, 0, 0, 1, 2);
-    }
+    actGrid->addWidget(Win7::label(Branding::brand("Linux is activated")),
+                       0, 0, 1, 2);
     addInfoRow(actGrid, 1, "Product ID:", info.productId);
 
     contentV->addLayout(actGrid);
 
     contentV->addStretch(1);
-    root->addWidget(contentWrap, 1);
 }

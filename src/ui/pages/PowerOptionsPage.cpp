@@ -1,4 +1,5 @@
 #include "PowerOptionsPage.h"
+#include "Win7Ui.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -99,55 +100,42 @@ void PowerOptionsPage::setActiveProfile(const QString &profileId)
 }
 
 // Sidebar
-QStringList PowerOptionsPage::sidebarLinks()
+QList<SidebarLink> PowerOptionsPage::sidebarLinks()
 {
     // "Control Panel Home" is prepended by the sidebar shell itself, so it must
     // not be repeated here.
     return {
-        "Require a password when the computer wakes",
-        "Choose what the power buttons do",
-        "Create a power plan",
-        "Choose when to turn off the display",
+        Nav::plain("Require a password when the computer wakes"),
+        Nav::plain("Choose what the power buttons do"),
+        Nav::plain("Create a power plan"),
+        Nav::plain("Choose when to turn off the display"),
     };
 }
 
-QStringList PowerOptionsPage::sidebarSeeAlso()
+QList<SidebarLink> PowerOptionsPage::sidebarSeeAlso()
 {
     return {
-        "Personalization",
-        "User Accounts",
+        Nav::to("Personalization", PageId::Personalization),
+        Nav::to("User Accounts", PageId::UserAccounts),
     };
 }
 
 // Page
-PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
+PowerOptionsPage::PowerOptionsPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
     bool ok = false;
     QStringList profiles = availableProfiles(ok);
     m_ppdAvailable = ok && !profiles.isEmpty();
 
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
-
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 20);
-    contentV->setSpacing(0);
+    // Fixed-width content column, left-aligned with the rest filled white,
+    // matching the Linux Firewall page so this screen sits at the same width
+    // as the app's other detail pages.
+    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+                                        /*fixedWidth=*/700);
 
     // Page title.
-    auto *pageTitle = new QLabel("Select a power plan");
-    {
-        QFont f = pageTitle->font();
-        f.setPointSize(12);
-        pageTitle->setFont(f);
-    }
-    pageTitle->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(pageTitle);
+    contentV->addWidget(Win7::pageTitle("Select a power plan"));
     contentV->addSpacing(10);
 
     // Intro paragraph with the trailing "Tell me more…" link. A real <a> gives
@@ -175,33 +163,6 @@ PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
     contentV->addWidget(intro);
     contentV->addSpacing(16);
 
-    // Section heading: muted label with a hairline rule trailing off to the
-    // right, optionally ending in a trailing widget (the expander chevron).
-    auto addHeading = [&](const QString &text, QWidget *trailing = nullptr) {
-        auto *row = new QHBoxLayout;
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(8);
-
-        auto *h = new QLabel(text);
-        QFont f = h->font();
-        f.setPointSize(9);
-        h->setFont(f);
-        h->setStyleSheet("color: #555555; background: transparent;");
-        row->addWidget(h, 0, Qt::AlignVCenter);
-
-        auto *line = new QFrame;
-        line->setFrameShape(QFrame::HLine);
-        line->setFixedHeight(1);
-        line->setStyleSheet("QFrame { background: #DDDDDD; border: none; }");
-        row->addWidget(line, 1, Qt::AlignVCenter);
-
-        if (trailing)
-            row->addWidget(trailing, 0, Qt::AlignVCenter);
-
-        contentV->addLayout(row);
-        return h;
-    };
-
     m_group = new QButtonGroup(this);
     QObject::connect(m_group, &QButtonGroup::buttonClicked, this,
         [this](QAbstractButton *btn) {
@@ -210,7 +171,7 @@ PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
         });
 
     // Preferred plans
-    addHeading("Preferred plans");
+    contentV->addLayout(Win7::sectionHeading("Preferred plans"));
     contentV->addSpacing(6);
 
     m_planList = new QVBoxLayout;
@@ -227,18 +188,11 @@ PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
     m_additionalBox->setContentsMargins(14, 0, 0, 0);
     m_additionalBox->setSpacing(14);
 
-    // The round chevron toggles the additional-plans block. ⏶ when expanded
-    // (click to hide), ⏷ when collapsed (click to show).
-    auto *chevron = new QToolButton;
-    chevron->setCheckable(true);
-    chevron->setCursor(Qt::PointingHandCursor);
-    chevron->setFixedSize(20, 20);
-    chevron->setStyleSheet(
-        "QToolButton { border: 1px solid #C0CEDA; border-radius: 10px;"
-        " background: #F3F7FB; color: #1F4E99; font-size: 9pt; }"
-        "QToolButton:hover { background: #E4EEF7; }");
+    // The shared round Aero chevron toggles the additional-plans block: arrow
+    // up when expanded (click to hide), down when collapsed (click to show).
+    auto *chevron = new Win7::ChevronButton;
 
-    auto *additionalHeadingLabel = new QLabel;   // text set by applyExpanded
+    QLabel *additionalHeadingLabel = nullptr;   // text set by applyExpanded
 
     contentV->addSpacing(16);
 
@@ -247,24 +201,9 @@ PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
     m_additionalHeader = new QWidget;
     m_additionalHeader->setStyleSheet("background: transparent;");
     {
-        auto *row = new QHBoxLayout(m_additionalHeader);
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(8);
-
-        additionalHeadingLabel->setStyleSheet(
-            "color: #555555; background: transparent;");
-        QFont f = additionalHeadingLabel->font();
-        f.setPointSize(9);
-        additionalHeadingLabel->setFont(f);
-        row->addWidget(additionalHeadingLabel, 0, Qt::AlignVCenter);
-
-        auto *line = new QFrame;
-        line->setFrameShape(QFrame::HLine);
-        line->setFixedHeight(1);
-        line->setStyleSheet("QFrame { background: #DDDDDD; border: none; }");
-        row->addWidget(line, 1, Qt::AlignVCenter);
-
-        row->addWidget(chevron, 0, Qt::AlignVCenter);
+        auto *row = Win7::sectionHeading(QString(), chevron,
+                                         &additionalHeadingLabel);
+        m_additionalHeader->setLayout(row);
     }
     contentV->addWidget(m_additionalHeader);
     contentV->addSpacing(6);
@@ -274,20 +213,12 @@ PowerOptionsPage::PowerOptionsPage(QScrollArea *sidebar, QWidget *parent)
         m_additionalWrap->setVisible(expanded);
         additionalHeadingLabel->setText(expanded ? "Hide additional plans"
                                                   : "Show additional plans");
-        chevron->setText(expanded ? QString::fromUtf8("⏶")   // ⏶
-                                   : QString::fromUtf8("⏷")); // ⏷
         QSignalBlocker block(chevron);
         chevron->setChecked(expanded);
     };
     QObject::connect(chevron, &QToolButton::toggled, this, applyExpanded);
 
     contentV->addStretch(1);
-    // Fixed-width content column, left-aligned with the rest filled white,
-    // matching the Linux Firewall page so this screen sits at the same width as
-    // the app's other detail pages.
-    contentWrap->setFixedWidth(700);
-    root->addWidget(contentWrap, 0);
-    root->addStretch(1);
 
     // Populate the plan rows, then settle the expander state.
     buildPlans(m_ppdAvailable ? profiles : QStringList());

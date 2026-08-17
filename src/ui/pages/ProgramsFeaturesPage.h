@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QString>
 #include <QStringList>
+#include "PageId.h"
 #include <QList>
 #include <QDate>
 #include <QSoundEffect>
@@ -16,18 +17,20 @@ class QLabel;
 // Windows 7 "Uninstall or change a program" screen.
 //
 // The "installed programs" are the explicitly-installed packages reported by
-// `pacman -Qei`; each block gives the name, version, install date, installed
-// size and packager, which map onto the Name / Version / Installed On / Size /
-// Publisher columns.
+// `pacman -Qei`; each block gives the name, version, install date and
+// installed size, which map onto the Name / Version / Installed On / Size
+// columns. The Publisher column shows the software's actual developer
+// (AppStream data) or, for AUR packages, its AUR maintainer, see
+// applyPublishers().
 class ProgramsFeaturesPage : public QWidget {
     Q_OBJECT
 
 public:
-    explicit ProgramsFeaturesPage(QScrollArea *sidebar, QWidget *parent = nullptr);
+    explicit ProgramsFeaturesPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QStringList sidebarLinks();
-    static QStringList sidebarSeeAlso();
+    static QList<SidebarLink> sidebarLinks();
+    static QList<SidebarLink> sidebarSeeAlso();
 
 private:
     // One installed program (explicitly-installed package).
@@ -36,7 +39,7 @@ private:
         QString display;       // friendly name from its .desktop file, else name
         QString iconName;      // .desktop Icon= (theme name or path); may be empty
         QString version;       // version, e.g. "26.01-1.1"
-        QString publisher;     // packager name, e.g. "CachyOS"
+        QString publisher;     // developer/maintainer, e.g. "Valve Corporation"
         QDate   installed;     // install date
         qint64  sizeBytes = 0; // installed size in bytes
     };
@@ -48,6 +51,12 @@ private:
     // Replace each program's display name (and icon) with the friendly Name/Icon
     // from its .desktop file, where it has one. Worker-thread only.
     static void applyFriendlyNames(QList<ProgramInfo> &programs);
+
+    // Replace the Packager-derived publisher with the upstream developer from
+    // the AppStream catalog (repo packages) or the AUR maintainer from the AUR
+    // RPC (foreign packages), keeping the fallback where neither is known.
+    // Worker-thread only (shells out to pacman, gzip and curl).
+    static void applyPublishers(QList<ProgramInfo> &programs);
 
     // Show the "Searching..." placeholder and (re)launch the worker-thread load.
     void startLoad();

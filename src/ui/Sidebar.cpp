@@ -5,27 +5,39 @@
 
 #include "Sidebar.h"
 
+using namespace Aero;
+
+// https://www.eduroam.cz/_media/en/uzivatel/sw/win/seven04en.png
+// TODO: avatar in UserAccountsPage.cpp:177
+
 static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline);
 
 QString kStyleSheet = (
     "QScrollArea { background: transparent; border: none; }"
-    "QToolButton, QLabel"
-        "{ border: none; background: transparent; color: #000000; text-align: left; padding: 0; font-size: 9pt; }"
-    "QToolButton:hover, QLabel:hover"
-        "{ color: #0033AA; text-decoration: underline; }"
-    "QToolButton:hover:disabled, QLabel:hover:disabled"
-        "{ text-decoration: none; color: gray; }"
 );
 
-Sidebar::Sidebar(int initialWidth, QWidget *parent) :
-    QScrollArea(parent)
+Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent) :
+    QScrollArea(parent),
+    m_goHome(goHome),
+    m_fadeInText(false),
+    m_fadeOutText(false)
 {
+    /* This */
     this->setFixedWidth(initialWidth);
     this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->setFrameShape(QFrame::NoFrame);
     this->setWidgetResizable(true);
     this->setStyleSheet(kStyleSheet);
+
+    /* Palette */
+
+    // QPalette pal = palette();
+    // pal.setColor(QPalette::WindowText, QColor("#151c55"));
+    // setPalette(pal);
+    setStyleSheet("color: #151c55;");
+
+    /* Children */
 
     auto *pane = new QFrame;
     pane->setObjectName("navPane");
@@ -75,10 +87,10 @@ Sidebar::Sidebar(int initialWidth, QWidget *parent) :
     m_seeAlsoV->setSpacing(6);
     navV->addLayout(m_seeAlsoV);
 
-    m_goHome = new QAction("Control Panel Home", this);
+    if (m_goHome)
     {
         QWidget *w, *indic;
-        widgetForAction(goHome(), w, indic);
+        widgetForAction(m_goHome, w, indic);
         navV->insertSpacing(0, 16);
         navV->insertWidget(0, w);
     }
@@ -168,7 +180,13 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
         if (auto *ag = act->actionGroup())
             if (ag->isExclusive())
                 bind_prop(ag, "enabled", indicator, "text", &QActionGroup::triggered, true, [=](auto _) {   // We're not actually binding to "enabled", we're just using this func for brevity and to call syncOnCreate
-                    return QVariant(ag->checkedAction() == act ? "<strong>\u25cf</strong>" : "");
+                    bool isSelected = ag->checkedAction() == act;
+
+                    QFont font = but->font();
+                    font.setBold(isSelected);
+                    but->setFont(font);
+
+                    return QVariant(isSelected ? "<strong>\u25cf</strong>" : "");
                 });
 
         widget = but;

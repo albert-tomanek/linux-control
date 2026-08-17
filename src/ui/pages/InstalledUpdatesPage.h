@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QString>
 #include <QStringList>
+#include "PageId.h"
 #include <QList>
 #include <QHash>
 
@@ -21,11 +22,11 @@ class InstalledUpdatesPage : public QWidget {
     Q_OBJECT
 
 public:
-    explicit InstalledUpdatesPage(QScrollArea *sidebar, QWidget *parent = nullptr);
+    explicit InstalledUpdatesPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QStringList sidebarLinks();
-    static QStringList sidebarSeeAlso();
+    static QList<SidebarLink> sidebarLinks();
+    static QList<SidebarLink> sidebarSeeAlso();
 
 private:
     // One installed update: the latest recorded upgrade of a package.

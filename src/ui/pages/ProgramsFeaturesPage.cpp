@@ -1,5 +1,6 @@
 #include "ProgramsFeaturesPage.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -19,15 +20,17 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QHeaderView>
-#include <QScrollBar>
-#include <QApplication>
 #include <QLocale>
 #include <QDateTime>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QRegularExpression>
-#include <QtConcurrent>
-#include <QFutureWatcher>
+#include <QSet>
+#include <QXmlStreamReader>
 #include <algorithm>
 #include <climits>
 
@@ -223,6 +226,164 @@ static bool parseDesktopEntry(const QString &path, DesktopEntry &out)
     return true;
 }
 
+// Publisher lookup
+// pacman's "Packager" field only says who *built* the binary, the distro's
+// build farm ("CachyOS") for repo packages, "Unknown Packager" for local AUR
+// builds, never who actually makes or maintains the software. The Publisher
+// column wants the latter, so we consult two better sources and keep the
+// Packager-derived text only as a fallback:
+//  - repo packages: the AppStream catalog's <developer> for the package
+//    (e.g. steam -> "Valve Corporation"),
+//  - foreign/AUR packages: the AUR maintainer from the RPC endpoint
+//    (e.g. linux-devmgmt -> "actuallyaridan").
+
+// The names of all foreign (not-in-any-repo, i.e. AUR/local) packages.
+static QSet<QString> foreignPackages()
+{
+    QSet<QString> set;
+    QProcess p;
+    p.start("pacman", { "-Qmq" });
+    if (!p.waitForFinished(10000)) return set;
+    const QString out = QString::fromUtf8(p.readAllStandardOutput());
+    const QList<QStringView> lines = QStringView(out).split(u'\n', Qt::SkipEmptyParts);
+    for (const QStringView &l : lines)
+        set.insert(l.trimmed().toString());
+    return set;
+}
+
+// Scan one AppStream catalog/metainfo XML document, adding pkgname -> developer
+// entries. Handles both the current <developer><name> form and the legacy
+// <developer_name> tag, ignoring translated (xml:lang) variants. Existing
+// entries win, so the first component naming a package sticks.
+static void parseAppStreamXml(const QByteArray &xml, QHash<QString, QString> &devs)
+{
+    QXmlStreamReader r(xml);
+    QStringList pkgs;
+    QString devName, legacyName;
+    bool inDeveloper = false;
+    while (!r.atEnd()) {
+        const auto tok = r.readNext();
+        if (tok == QXmlStreamReader::EndElement) {
+            if (r.name() == u"developer") {
+                inDeveloper = false;
+            } else if (r.name() == u"component") {
+                const QString dev = !devName.isEmpty() ? devName : legacyName;
+                if (!dev.isEmpty())
+                    for (const QString &p : pkgs)
+                        if (!devs.contains(p)) devs.insert(p, dev);
+            }
+            continue;
+        }
+        if (tok != QXmlStreamReader::StartElement) continue;
+
+        const auto tag = r.name();
+        const bool translated = r.attributes().hasAttribute("xml:lang");
+        if (tag == u"component") {
+            pkgs.clear(); devName.clear(); legacyName.clear();
+            inDeveloper = false;
+        }
+        else if (tag == u"pkgname") {
+            pkgs << r.readElementText(QXmlStreamReader::IncludeChildElements).trimmed();
+        }
+        else if (tag == u"developer") {
+            inDeveloper = true;
+        }
+        else if (tag == u"name" && inDeveloper) {
+            const QString t = r.readElementText(QXmlStreamReader::IncludeChildElements);
+            if (!translated && devName.isEmpty()) devName = t.simplified();
+        }
+        else if (tag == u"developer_name") {
+            const QString t = r.readElementText(QXmlStreamReader::IncludeChildElements);
+            if (!translated && legacyName.isEmpty()) legacyName = t.simplified();
+        }
+    }
+}
+
+// pkgname -> upstream developer, read from the distro's AppStream catalogs
+// (the compressed XML shipped by archlinux-appstream-data). Covers every repo
+// desktop application; CLI-only packages have no AppStream component and keep
+// the fallback. CachyOS rebuilds of Arch packages keep the same pkgname, so
+// they match too.
+static QHash<QString, QString> readAppStreamDevelopers()
+{
+    QHash<QString, QString> devs;
+    static const QStringList dirs = {
+        "/usr/share/swcatalog/xml", "/var/lib/swcatalog/xml",
+        "/usr/share/app-info/xml",  "/var/lib/app-info/xml",   // pre-0.16 paths
+    };
+    for (const QString &dir : dirs) {
+        const QFileInfoList files = QDir(dir).entryInfoList(
+            { "*.xml", "*.xml.gz" }, QDir::Files);
+        for (const QFileInfo &fi : files) {
+            QByteArray xml;
+            if (fi.fileName().endsWith(".gz")) {
+                QProcess gz;
+                gz.start("gzip", { "-dc", fi.absoluteFilePath() });
+                if (!gz.waitForFinished(15000)) { gz.kill(); continue; }
+                xml = gz.readAllStandardOutput();
+            } else {
+                QFile f(fi.absoluteFilePath());
+                if (!f.open(QIODevice::ReadOnly)) continue;
+                xml = f.readAll();
+            }
+            parseAppStreamXml(xml, devs);
+        }
+    }
+    return devs;
+}
+
+// pkgname -> AUR maintainer, via batched requests to the AUR info RPC. Shells
+// out to curl (pacman itself depends on it) with a short timeout, so an
+// offline machine just keeps the fallback text. Orphaned packages report a
+// null maintainer and also keep the fallback.
+static QHash<QString, QString> fetchAurMaintainers(const QStringList &pkgs)
+{
+    QHash<QString, QString> out;
+    constexpr int batch = 150;                 // keep the GET URL a sane length
+    for (int i = 0; i < pkgs.size(); i += batch) {
+        QStringList args;
+        for (int j = i; j < qMin(i + batch, pkgs.size()); ++j)
+            args << "arg[]=" + QString::fromUtf8(QUrl::toPercentEncoding(pkgs[j]));
+        const QString url =
+            "https://aur.archlinux.org/rpc/v5/info?" + args.join(u'&');
+
+        QProcess curl;
+        curl.start("curl", { "-sf", "--max-time", "8", url });
+        if (!curl.waitForFinished(10000)) { curl.kill(); continue; }
+        const QJsonArray results = QJsonDocument::fromJson(
+            curl.readAllStandardOutput()).object().value("results").toArray();
+        for (const QJsonValue &v : results) {
+            const QJsonObject o = v.toObject();
+            const QString name  = o.value("Name").toString();
+            const QString maint = o.value("Maintainer").toString();
+            if (!name.isEmpty() && !maint.isEmpty()) out.insert(name, maint);
+        }
+    }
+    return out;
+}
+
+void ProgramsFeaturesPage::applyPublishers(QList<ProgramInfo> &programs)
+{
+    if (programs.isEmpty()) return;
+
+    const QSet<QString> foreign = foreignPackages();
+    QStringList aurPkgs;
+    bool anyNative = false;
+    for (const ProgramInfo &p : programs) {
+        if (foreign.contains(p.name)) aurPkgs << p.name;
+        else                          anyNative = true;
+    }
+
+    const QHash<QString, QString> maint = fetchAurMaintainers(aurPkgs);
+    const QHash<QString, QString> devs  = anyNative ? readAppStreamDevelopers()
+                                                    : QHash<QString, QString>();
+    for (ProgramInfo &p : programs) {
+        const QString better = foreign.contains(p.name) ? maint.value(p.name)
+                                                        : devs.value(p.name);
+        if (!better.isEmpty()) p.publisher = better;
+    }
+}
+
 void ProgramsFeaturesPage::applyFriendlyNames(QList<ProgramInfo> &programs)
 {
     for (ProgramInfo &p : programs)
@@ -332,6 +493,8 @@ QList<ProgramsFeaturesPage::ProgramInfo> ProgramsFeaturesPage::gatherPrograms()
         else if (key == "Version")        cur.version = val;
         else if (key == "Installed Size") cur.sizeBytes = parseSize(val);
         else if (key == "Packager") {
+            // Fallback publisher only; applyPublishers() replaces it with the
+            // real developer/maintainer wherever one is known.
             // "CachyOS <admin@cachyos.org>" -> "CachyOS"; drop the e-mail part.
             const int lt = val.indexOf('<');
             cur.publisher = (lt > 0 ? val.left(lt) : val).trimmed();
@@ -347,155 +510,86 @@ QList<ProgramsFeaturesPage::ProgramInfo> ProgramsFeaturesPage::gatherPrograms()
     }
     flush();
 
+    applyPublishers(result);      // packager -> real developer / AUR maintainer
     applyFriendlyNames(result);   // package name -> .desktop "Name=" where available
     return result;
 }
 
 // Sidebar entries
-QStringList ProgramsFeaturesPage::sidebarLinks()
+QList<SidebarLink> ProgramsFeaturesPage::sidebarLinks()
 {
-    return { "Control Panel Home", "View installed updates",
-             "Turn Linux features on or off" };
+    return {
+        Nav::to("View installed updates", PageId::InstalledUpdates),
+        Nav::plain("Turn Linux features on or off"),
+    };
 }
 
-QStringList ProgramsFeaturesPage::sidebarSeeAlso()
+QList<SidebarLink> ProgramsFeaturesPage::sidebarSeeAlso()
 {
     return {};
 }
 
 // Page
-ProgramsFeaturesPage::ProgramsFeaturesPage(QScrollArea *sidebar, QWidget *parent)
+ProgramsFeaturesPage::ProgramsFeaturesPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
-    setStyleSheet("background: #FFFFFF;");
-
     // The Win7 warning-dialog sound, loaded once so it's ready to play instantly
     // when the uninstall/reinstall dialog opens.
     m_dialogSound.setSource(QUrl::fromLocalFile(
         "/usr/share/sounds/Windows 7/og/Windows Exclamation.wav"));
     m_dialogSound.setVolume(1.0f);
 
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
+    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/0);
+    // The list frame (command bar + tree + status strip) is full-bleed, so the
+    // column itself carries no horizontal padding; only the header text below is
+    // indented, via its own inset sub-layout.
+    contentV->setContentsMargins(0, 18, 0, 0);
 
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 0);
-    contentV->setSpacing(0);
-
-    // Title + instruction.
-    auto *title = new QLabel("Uninstall or change a program");
-    {
-        QFont f = title->font();
-        f.setPointSize(12);
-        title->setFont(f);
-    }
-    title->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(title);
-    contentV->addSpacing(8);
-
-    auto *subtitle = new QLabel(
+    // Title + instruction (the only indented block).
+    auto *headerV = new QVBoxLayout;
+    headerV->setContentsMargins(28, 0, 28, 0);
+    headerV->setSpacing(0);
+    headerV->addWidget(Win7::pageTitle("Uninstall or change a program"));
+    headerV->addSpacing(8);
+    headerV->addWidget(Win7::label(
         "To uninstall a program, select it from the list and then click "
-        "Uninstall, Change, or Repair.");
-    {
-        QFont f = subtitle->font();
-        f.setPointSize(9);
-        subtitle->setFont(f);
-    }
-    subtitle->setStyleSheet("color: #000000; background: transparent;");
-    contentV->addWidget(subtitle);
+        "Uninstall, Change, or Repair."));
+    contentV->addLayout(headerV);
     contentV->addSpacing(12);
+    contentV->addWidget(Win7::hSeparator());
 
-    auto *topSep = new QFrame;
-    topSep->setFrameShape(QFrame::HLine);
-    topSep->setStyleSheet("color: #D9D9D9;");
-    contentV->addWidget(topSep);
-
-    // "Organize" toolbar row
-    auto *toolBar = new QFrame;
-    toolBar->setObjectName("pfToolBar");
-    toolBar->setFixedHeight(28);
-    toolBar->setStyleSheet(
-        "#pfToolBar { background: #F4F7FB; border-bottom: 1px solid #D9D9D9; }");
-    auto *toolH = new QHBoxLayout(toolBar);
-    toolH->setContentsMargins(8, 0, 8, 0);
-    toolH->setSpacing(6);
-
-    auto *organize = new QLabel("Organize ▾");
-    {
-        QFont f = organize->font();
-        f.setPointSize(9);
-        organize->setFont(f);
-    }
-    organize->setStyleSheet("color: #1F1F1F; background: transparent;");
-    toolH->addWidget(organize);
+    // "Organize" command bar
+    QHBoxLayout *toolH = nullptr;
+    auto *toolBar = Win7::commandBar(&toolH);
+    toolH->addWidget(Win7::dropdownLabel("Organize"));
     toolH->addStretch(1);
-
-    auto *viewIcon = new QLabel;
-    viewIcon->setPixmap(themeIcon({"view-list-details", "view-list-text",
-                                   "view-choose"}).pixmap(16, 16));
-    toolH->addWidget(viewIcon);
-    auto *helpIcon = new QLabel;
-    helpIcon->setPixmap(themeIcon({"help-contents", "help-browser",
-                                   "system-help"}).pixmap(16, 16));
-    toolH->addWidget(helpIcon);
+    Win7::addCommandBarIcons(toolH);
     contentV->addWidget(toolBar);
 
     // Programs tree
     m_tree = new QTreeWidget;
     m_tree->setColumnCount(5);
     m_tree->setHeaderLabels({ "Name", "Publisher", "Installed On", "Size", "Version" });
-    m_tree->setRootIsDecorated(false);
-    m_tree->setIndentation(0);
-    m_tree->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_tree->setAlternatingRowColors(false);
-    m_tree->setFrameShape(QFrame::NoFrame);
     m_tree->setSortingEnabled(true);
-    m_tree->header()->setDefaultAlignment(Qt::AlignLeft);
-    m_tree->header()->setStretchLastSection(true);
+    Win7::configureListTree(m_tree);
     for (int c = 0; c < 4; ++c)
         m_tree->header()->setSectionResizeMode(c, QHeaderView::Interactive);
     m_tree->setColumnWidth(0, 300);
     m_tree->setColumnWidth(1, 150);
     m_tree->setColumnWidth(2, 90);
     m_tree->setColumnWidth(3, 70);
-    {
-        QFont hf = m_tree->header()->font();
-        hf.setPointSize(9);
-        m_tree->header()->setFont(hf);
-    }
-    m_tree->header()->setStyleSheet(
-        "QHeaderView::section {"
-        "  background: #F0F0F0;"
-        "  border: none;"
-        "  border-bottom: 1px solid #CCCCCC;"
-        "  border-right: 1px solid #CCCCCC;"
-        "  padding: 4px;"
-        "  font-size: 9pt;"
-        "}");
-    m_tree->verticalScrollBar()->setStyle(QApplication::style());
-    m_tree->horizontalScrollBar()->setStyle(QApplication::style());
     // Double-clicking a program opens the Uninstall/Reinstall dialog.
     connect(m_tree, &QTreeWidget::itemDoubleClicked,
             this, &ProgramsFeaturesPage::onProgramActivated);
     contentV->addWidget(m_tree, 1);
 
     // Status bar: total size + program count
-    auto *statusBar = new QFrame;
-    statusBar->setObjectName("pfStatusBar");
-    statusBar->setFixedHeight(44);
-    statusBar->setStyleSheet(
-        "#pfStatusBar { background: #F4F7FB; border-top: 1px solid #D9D9D9; }");
-    auto *statusH = new QHBoxLayout(statusBar);
-    statusH->setContentsMargins(10, 0, 10, 0);
-    statusH->setSpacing(8);
+    QHBoxLayout *statusH = nullptr;
+    auto *statusBar = Win7::statusPanel(52, &statusH);
 
     auto *statusIcon = new QLabel;
-    statusIcon->setPixmap(themeIcon({"applications-other",
-                                     "preferences-system"}).pixmap(28, 28));
+    statusIcon->setPixmap(themeIcon({"application-vnd.debian.binary-package",
+                                     "preferences-system"}).pixmap(42, 42));
     statusH->addWidget(statusIcon);
 
     auto *statusText = new QVBoxLayout;
@@ -505,33 +599,18 @@ ProgramsFeaturesPage::ProgramsFeaturesPage(QScrollArea *sidebar, QWidget *parent
     auto *line1 = new QHBoxLayout;
     line1->setContentsMargins(0, 0, 0, 0);
     line1->setSpacing(40);
-    auto *captionLbl = new QLabel("Currently installed programs");
-    m_totalLbl       = new QLabel;
-    for (QLabel *l : { captionLbl, m_totalLbl }) {
-        QFont f = l->font();
-        f.setPointSize(9);
-        l->setFont(f);
-        l->setStyleSheet("color: #1F1F1F; background: transparent;");
-    }
-    line1->addWidget(captionLbl);
+    m_totalLbl = Win7::label(QString(), 9, "#1F1F1F");
+    line1->addWidget(Win7::label("Currently installed programs", 9, "#1F1F1F"));
     line1->addWidget(m_totalLbl);
     line1->addStretch(1);
     statusText->addLayout(line1);
 
-    m_countLbl = new QLabel("0 programs installed");
-    {
-        QFont f = m_countLbl->font();
-        f.setPointSize(9);
-        m_countLbl->setFont(f);
-    }
-    m_countLbl->setStyleSheet("color: #555555; background: transparent;");
+    m_countLbl = Win7::label("0 programs installed", 9, "#555555");
     statusText->addWidget(m_countLbl);
 
     statusH->addLayout(statusText);
     statusH->addStretch(1);
     contentV->addWidget(statusBar);
-
-    root->addWidget(contentWrap, 1);
 
     startLoad();
 }
@@ -543,22 +622,15 @@ void ProgramsFeaturesPage::startLoad()
     // already on screen with the "Searching..." placeholder by then. This is
     // also called to refresh the list after a package is uninstalled.
     m_tree->clear();
-    auto *searching = new QTreeWidgetItem(m_tree);
-    searching->setFirstColumnSpanned(true);
-    searching->setTextAlignment(0, Qt::AlignHCenter);
-    searching->setText(0, "Searching for installed programs...");
-    searching->setFlags(Qt::ItemIsEnabled);
+    Win7::addTreePlaceholder(m_tree, "Searching for installed programs...");
     m_countLbl->setText("0 programs installed");
     m_totalLbl->clear();
     m_tree->setCursor(Qt::BusyCursor);
 
-    auto *watcher = new QFutureWatcher<QList<ProgramInfo>>(this);
-    connect(watcher, &QFutureWatcher<QList<ProgramInfo>>::finished, this,
-            [this, watcher]() {
-        populate(watcher->result());
-        watcher->deleteLater();
+    Win7::runAsync(this, &ProgramsFeaturesPage::gatherPrograms,
+                   [this](const QList<ProgramInfo> &programs) {
+        populate(programs);
     });
-    watcher->setFuture(QtConcurrent::run(&ProgramsFeaturesPage::gatherPrograms));
 }
 
 void ProgramsFeaturesPage::populate(const QList<ProgramInfo> &programs)
@@ -588,11 +660,7 @@ void ProgramsFeaturesPage::populate(const QList<ProgramInfo> &programs)
         item->setText(3, humanSize(p.sizeBytes));
         item->setText(4, p.version);
         item->setData(3, SizeSortRole, static_cast<qlonglong>(p.sizeBytes));
-        for (int c = 0; c < 5; ++c) {
-            QFont cf = item->font(c);
-            cf.setPointSize(9);
-            item->setFont(c, cf);
-        }
+        Win7::setItemPointSize(item);
         totalBytes += p.sizeBytes;
     }
     m_tree->sortByColumn(0, Qt::AscendingOrder);

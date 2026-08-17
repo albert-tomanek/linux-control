@@ -1,5 +1,7 @@
 #include "NetworkSharingPage.h"
+#include "Commands.h"
 #include "IconHelper.h"
+#include "Win7Ui.h"
 
 #include <QScrollArea>
 #include <QLabel>
@@ -74,20 +76,20 @@ NetworkSharingPage::NetInfo NetworkSharingPage::gatherInfo()
 }
 
 // Sidebar
-QStringList NetworkSharingPage::sidebarLinks()
+QList<SidebarLink> NetworkSharingPage::sidebarLinks()
 {
     return {
-        "Change adapter settings",
-        "Change advanced sharing settings",
+        Nav::command("Change adapter settings", kcm("kcm_networkmanagement")),
+        Nav::plain("Change advanced sharing settings"),
     };
 }
 
-QStringList NetworkSharingPage::sidebarSeeAlso()
+QList<SidebarLink> NetworkSharingPage::sidebarSeeAlso()
 {
     return {
-        "HomeGroup",
-        "Internet Options",
-        "Linux Firewall",
+        Nav::plain("HomeGroup"),
+        Nav::plain("Internet Options"),
+        Nav::to("Linux Firewall", PageId::Firewall),
     };
 }
 
@@ -119,23 +121,13 @@ QWidget *NetworkSharingPage::buildMapNode(const QStringList &iconNames,
     iconLabel->setStyleSheet("background: transparent;");
     col->addWidget(iconLabel, 0, Qt::AlignHCenter);
 
-    auto *cap = new QLabel(caption);
-    {
-        QFont f = cap->font();
-        f.setPointSize(9);
-        cap->setFont(f);
-    }
+    auto *cap = Win7::label(caption);
     cap->setAlignment(Qt::AlignHCenter);
-    cap->setStyleSheet("color: #000000; background: transparent;");
     col->addWidget(cap, 0, Qt::AlignHCenter);
 
     if (!subCaption.isEmpty()) {
-        auto *sub = new QLabel(subCaption);
-        QFont f = sub->font();
-        f.setPointSize(9);
-        sub->setFont(f);
+        auto *sub = Win7::label(subCaption);
         sub->setAlignment(Qt::AlignHCenter);
-        sub->setStyleSheet("color: #000000; background: transparent;");
         col->addWidget(sub, 0, Qt::AlignHCenter);
     }
 
@@ -192,26 +184,10 @@ void NetworkSharingPage::addTask(QVBoxLayout *into, const QStringList &iconNames
     textCol->setContentsMargins(0, 0, 0, 0);
     textCol->setSpacing(1);
 
-    auto *titleLabel = new QLabel(title);
-    {
-        QFont f = titleLabel->font();
-        f.setPointSize(9);
-        titleLabel->setFont(f);
-    }
-    titleLabel->setCursor(Qt::PointingHandCursor);
-    titleLabel->setStyleSheet(
-        "QLabel { color: #1F4E99; background: transparent; }"
-        "QLabel:hover { color: #0033AA; }");
-    textCol->addWidget(titleLabel);
+    textCol->addWidget(Win7::bodyLabel(title, /*link=*/true));
 
-    auto *descLabel = new QLabel(description);
-    {
-        QFont f = descLabel->font();
-        f.setPointSize(9);
-        descLabel->setFont(f);
-    }
+    auto *descLabel = Win7::label(description, 9, "#333333");
     descLabel->setWordWrap(true);
-    descLabel->setStyleSheet("color: #333333; background: transparent;");
     textCol->addWidget(descLabel);
 
     row->addLayout(textCol, 1);
@@ -221,33 +197,19 @@ void NetworkSharingPage::addTask(QVBoxLayout *into, const QStringList &iconNames
 }
 
 // Page
-NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
+NetworkSharingPage::NetworkSharingPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
 {
     const NetInfo info = gatherInfo();
 
-    setStyleSheet("background: #FFFFFF;");
-    auto *root = new QHBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-    root->addWidget(sidebar);
-
-    auto *contentWrap = new QWidget;
-    contentWrap->setStyleSheet("background: #FFFFFF;");
-    auto *contentV = new QVBoxLayout(contentWrap);
-    contentV->setContentsMargins(28, 18, 28, 20);
-    contentV->setSpacing(0);
+    // Windows 7 lays the content out at a fixed width and leaves the rest of
+    // the window blank on the right rather than stretching to fill it.
+    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+                                        /*fixedWidth=*/700);
 
     // Page title
-    auto *pageTitle =
-        new QLabel("View your basic network information and set up connections");
-    {
-        QFont f = pageTitle->font();
-        f.setPointSize(12);
-        pageTitle->setFont(f);
-    }
-    pageTitle->setStyleSheet("color: #1A3C7A; background: transparent;");
-    contentV->addWidget(pageTitle);
+    contentV->addWidget(Win7::pageTitle(
+        "View your basic network information and set up connections"));
     contentV->addSpacing(16);
 
     // Network map: This computer, Network, Internet
@@ -287,17 +249,8 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
     mapRow->addStretch(1);
 
     // "See full map" link, pinned to the top-right of the map row.
-    auto *fullMap = new QLabel("See full map");
-    {
-        QFont f = fullMap->font();
-        f.setPointSize(9);
-        fullMap->setFont(f);
-    }
-    fullMap->setCursor(Qt::PointingHandCursor);
-    fullMap->setStyleSheet(
-        "QLabel { color: #1F4E99; background: transparent; }"
-        "QLabel:hover { color: #0033AA; }");
-    mapRow->addWidget(fullMap, 0, Qt::AlignTop);
+    mapRow->addWidget(Win7::bodyLabel("See full map", /*link=*/true),
+                      0, Qt::AlignTop);
 
     contentV->addLayout(mapRow);
     contentV->addSpacing(18);
@@ -307,36 +260,11 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
     // faint rule trailing off to its right, and an optional link pinned past the
     // rule at the far right.
     auto addHeading = [&](const QString &text, const QString &trailingLink) {
-        auto *row = new QHBoxLayout;
-        row->setContentsMargins(0, 0, 0, 0);
-        row->setSpacing(8);
-
-        auto *h = new QLabel(text);
-        QFont f = h->font();
-        f.setPointSize(9);
-        h->setFont(f);
-        h->setStyleSheet("color: #000000; background: transparent;");
-        row->addWidget(h, 0, Qt::AlignVCenter);
-
-        auto *line = new QFrame;
-        line->setFrameShape(QFrame::HLine);
-        line->setFixedHeight(1);
-        line->setStyleSheet("QFrame { background: #DDDDDD; border: none; }");
-        row->addWidget(line, 1, Qt::AlignVCenter);
-
-        if (!trailingLink.isEmpty()) {
-            auto *link = new QLabel(trailingLink);
-            QFont lf = link->font();
-            lf.setPointSize(9);
-            link->setFont(lf);
-            link->setCursor(Qt::PointingHandCursor);
-            link->setStyleSheet(
-                "QLabel { color: #1F4E99; background: transparent; }"
-                "QLabel:hover { color: #0033AA; }");
-            row->addWidget(link, 0, Qt::AlignVCenter);
-        }
-
-        contentV->addLayout(row);
+        QWidget *trailing = trailingLink.isEmpty()
+            ? nullptr
+            : Win7::bodyLabel(trailingLink, /*link=*/true);
+        contentV->addLayout(
+            Win7::sectionHeading(text, trailing, nullptr, "#000000"));
         contentV->addSpacing(6);
     };
 
@@ -370,17 +298,7 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
     netName->setStyleSheet("color: #000000; background: transparent;");
     nameCol->addWidget(netName);
 
-    auto *category = new QLabel("Public network");
-    {
-        QFont f = category->font();
-        f.setPointSize(9);
-        category->setFont(f);
-    }
-    category->setCursor(Qt::PointingHandCursor);
-    category->setStyleSheet(
-        "QLabel { color: #1F4E99; background: transparent; }"
-        "QLabel:hover { color: #0033AA; }");
-    nameCol->addWidget(category);
+    nameCol->addWidget(Win7::bodyLabel("Public network", /*link=*/true));
     activeRow->addLayout(nameCol);
 
     activeRow->addSpacing(20);
@@ -400,21 +318,12 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
     detailGrid->setHorizontalSpacing(10);
     detailGrid->setVerticalSpacing(6);
 
-    auto makeFieldLabel = [](const QString &text) {
-        auto *l = new QLabel(text);
-        QFont f = l->font();
-        f.setPointSize(9);
-        l->setFont(f);
-        l->setStyleSheet("color: #000000; background: transparent;");
-        return l;
-    };
-
-    detailGrid->addWidget(makeFieldLabel("Access type:"), 0, 0,
+    detailGrid->addWidget(Win7::label("Access type:"), 0, 0,
                           Qt::AlignLeft | Qt::AlignVCenter);
-    detailGrid->addWidget(makeFieldLabel(info.accessType), 0, 1,
+    detailGrid->addWidget(Win7::label(info.accessType), 0, 1,
                           Qt::AlignLeft | Qt::AlignVCenter);
 
-    detailGrid->addWidget(makeFieldLabel("Connections:"), 1, 0,
+    detailGrid->addWidget(Win7::label("Connections:"), 1, 0,
                           Qt::AlignLeft | Qt::AlignVCenter);
 
     // The connection value is a small-icon + blue link cell.
@@ -435,17 +344,8 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
     connIcon->setStyleSheet("background: transparent;");
     connH->addWidget(connIcon, 0, Qt::AlignVCenter);
 
-    auto *connLink = new QLabel(info.connectionName);
-    {
-        QFont f = connLink->font();
-        f.setPointSize(9);
-        connLink->setFont(f);
-    }
-    connLink->setCursor(Qt::PointingHandCursor);
-    connLink->setStyleSheet(
-        "QLabel { color: #1F4E99; background: transparent; }"
-        "QLabel:hover { color: #0033AA; }");
-    connH->addWidget(connLink, 0, Qt::AlignVCenter);
+    connH->addWidget(Win7::bodyLabel(info.connectionName, /*link=*/true),
+                     0, Qt::AlignVCenter);
     connH->addStretch(1);
 
     detailGrid->addWidget(connCell, 1, 1, Qt::AlignLeft | Qt::AlignVCenter);
@@ -484,11 +384,4 @@ NetworkSharingPage::NetworkSharingPage(QScrollArea *sidebar, QWidget *parent)
             "information.");
 
     contentV->addStretch(1);
-
-    // Windows 7 lays the content out at a fixed width and leaves the rest of the
-    // window blank on the right; it does not stretch the panel to fill a wide
-    // window. Pin a fixed width and absorb the surplus with a trailing stretch.
-    contentWrap->setFixedWidth(700);
-    root->addWidget(contentWrap, 0);
-    root->addStretch(1);
 }

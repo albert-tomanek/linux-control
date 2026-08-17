@@ -13,13 +13,16 @@ find_package(KF6WindowSystem REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(AeroQt REQUIRED)
+find_package(Cups REQUIRED)
 
 add_compile_options(-g)
 
 add_executable(controlpanel
     src/main.cpp
+    src/ui/LinkLabel.h
     src/ui/MainWindow.cpp
     src/ui/Sidebar.cpp
+    src/ui/PageRegistry.cpp
     src/ui/CategoryWidget.cpp
     src/ui/pages/LinuxUpdatePage.cpp
     src/ui/pages/SystemPage.cpp
@@ -27,8 +30,21 @@ add_executable(controlpanel
     src/ui/pages/ProgramsFeaturesPage.cpp
     src/ui/pages/NetworkSharingPage.cpp
     src/ui/pages/FirewallPage.cpp
+    src/ui/pages/ActionCenterPage.cpp
     src/ui/pages/PowerOptionsPage.cpp
     src/ui/pages/PerformancePage.cpp
+    src/ui/pages/PersonalizationPage.cpp
+    src/ui/pages/FontsPage.cpp
+    src/ui/pages/UserAccountsPage.cpp
+    src/ui/pages/EaseOfAccessPage.cpp
+    src/ui/pages/DevicesAndPrintersPage.cpp
+    src/ui/dialogs/DateTimeDialog.cpp
+    src/ui/dialogs/SoundDialog.cpp
+    src/ui/dialogs/DevicePropertiesDialog.cpp
+    src/ui/dialogs/LinverConfigDialog.cpp
+    src/devices/SysfsScanner.cpp
+    src/devices/PrinterScanner.cpp
+    src/data/WindowsTimeZones.cpp
     src/perf/WeiBenchmark.cpp
     src/data/Categories.cpp
     src/data/SystemAndSecurity.cpp
@@ -39,11 +55,14 @@ add_executable(controlpanel
     src/data/AppearanceAndPersonalization.cpp
     src/data/ClockLanguageRegion.cpp
     src/data/EaseOfAccess.cpp
+    src/data/Branding.cpp
 )
 
 target_include_directories(controlpanel PRIVATE
     src/ui
     src/ui/pages
+    src/ui/dialogs
+    src/devices
     src/data
     src
 )
@@ -59,6 +78,7 @@ target_link_libraries(controlpanel PRIVATE
     ZLIB::ZLIB
     OpenSSL::Crypto
     AeroQt
+    Cups::Cups
 )
 
 set_target_properties(controlpanel PROPERTIES

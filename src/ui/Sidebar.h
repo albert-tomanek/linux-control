@@ -5,34 +5,36 @@
 
 class MainWindow;
 
-class Sidebar: public QScrollArea {
-    Q_OBJECT
+namespace Aero {
+    class Sidebar: public QScrollArea {
+        Q_OBJECT
 
-    QWidget     *textWrap, *m_seeAlsoLabel;
-    QVBoxLayout *navV, *m_seeAlsoV;
-    QFormLayout *m_itemsL;
+        QWidget     *textWrap, *m_seeAlsoLabel;
+        QVBoxLayout *navV, *m_seeAlsoV;
+        QFormLayout *m_itemsL;
 
-    QGraphicsOpacityEffect *m_sidebarTextEffect;
-    bool m_fadeInText, m_fadeOutText;
+        QGraphicsOpacityEffect *m_sidebarTextEffect;
+        bool m_fadeInText, m_fadeOutText;
 
-    QAction *m_goHome;
+        QAction *m_goHome;
 
-public:
-    inline QAction *goHome() { return m_goHome; }
+    public:
+        void setFadeInText(bool b);
+        void setFadeOutText(bool b);
 
-    void setFadeInText(bool b);
-    void setFadeOutText(bool b);
+    public:
+        Sidebar(
+            QAction *goHome = nullptr,
+            int initialWidth = 0,
+            QWidget *parent = nullptr
+        );
 
-public:
-    friend class MainWindow;
+        void addItem(QAction *act); // When an destination is clicked, it emits ::triggered()
+        void addSeeAlso(QAction *act);
 
-    Sidebar(int initialWidth, QWidget *parent = nullptr);
-
-    void addItem(QAction *act); // When an destination is clicked, it emits ::triggered()
-    void addSeeAlso(QAction *act);
-
-private:
-    void widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator);
-};
+    private:
+        void widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator);
+    };
+}
 
 #endif // SIDEBAR_H
