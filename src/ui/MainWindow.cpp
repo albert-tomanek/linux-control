@@ -786,6 +786,11 @@ Aero::Sidebar *MainWindow::buildSubpageSidebar(const QList<SidebarLink> &links,
         else
             act->setEnabled(false);
 
+        if (sl.text == "Turn Linux features on or off") // Just as a demo; this should actually be stored in the SidebarLink somehow
+            act->setProperty("elevatedPriv", true);
+        if (sl.text == "View installed updates")
+            act->setIcon(QIcon::fromTheme("weather-clouds"));   // Gotta enable this in the sidebar constructor
+
         return act;
     };
 

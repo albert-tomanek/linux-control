@@ -9,6 +9,7 @@ using namespace Aero;
 
 // https://www.eduroam.cz/_media/en/uzivatel/sw/win/seven04en.png
 // TODO: avatar in UserAccountsPage.cpp:177
+// convert SidebarLink to QAction somehow
 
 static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline);
 
@@ -16,9 +17,10 @@ QString kStyleSheet = (
     "QScrollArea { background: transparent; border: none; }"
 );
 
-Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent) :
+Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIcons) :
     QScrollArea(parent),
     m_goHome(goHome),
+    m_showIcons(showIcons),
     m_fadeInText(false),
     m_fadeOutText(false)
 {
@@ -82,10 +84,11 @@ Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent) :
     m_seeAlsoLabel->hide();
     navV->addWidget(m_seeAlsoLabel);
 
-    m_seeAlsoV = new QVBoxLayout;
-    m_seeAlsoV->setContentsMargins(0, 8, 0, 0);
-    m_seeAlsoV->setSpacing(6);
-    navV->addLayout(m_seeAlsoV);
+    m_seeAlsoL = new QFormLayout;
+    m_seeAlsoL->setContentsMargins(0, 8, 0, 0);
+    m_seeAlsoL->setSpacing(6);
+    m_itemsL->setHorizontalSpacing(0);
+    navV->addLayout(m_seeAlsoL);
 
     if (m_goHome)
     {
@@ -121,12 +124,12 @@ void Sidebar::setFadeOutText(bool b)
 void Sidebar::addItem(QAction *act)
 {
     QWidget *w = nullptr;
-    QWidget *indic = nullptr;
+    QWidget *icon = nullptr;
 
-    widgetForAction(act, w, indic);
+    widgetForAction(act, w, icon);
 
-    if (indic) {
-        m_itemsL->addRow(indic, w);
+    if (icon) {
+        m_itemsL->addRow(icon, w);
 
         m_itemsL->setHorizontalSpacing(6);    // Don't actually have any spacing until at least one item with a check indicator is added
     }
@@ -136,11 +139,20 @@ void Sidebar::addItem(QAction *act)
 
 void Sidebar::addSeeAlso(QAction *act)
 {
-    QWidget *w, *indic;
-    widgetForAction(act, w, indic);
-
-    m_seeAlsoV->addWidget(w);
     m_seeAlsoLabel->show();
+
+    QWidget *w = nullptr;
+    QWidget *icon = nullptr;
+
+    widgetForAction(act, w, icon);
+
+    if (icon) {
+        m_seeAlsoL->addRow(icon, w);
+
+        m_seeAlsoL->setHorizontalSpacing(6);    // Don't actually have any spacing until at least one item with a check indicator is added
+    }
+    else
+        m_seeAlsoL->addRow(nullptr, w);
 }
 
 void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator)
@@ -159,6 +171,10 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
             QMetaObject::invokeMethod(act, &QAction::trigger, Qt::QueuedConnection);
         }
     };
+
+    indicator = nullptr;
+
+    /* Create the actual widget */
 
     if (act->isCheckable()) {
         /* Act is part of a group of destinations that switch */
@@ -209,6 +225,25 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
         });
 
         widget = but;
+    }
+
+    /* Fill the indicator if it hasn't been filled yet */
+    if (!indicator) {
+        if (QVariant v = act->property("elevatedPriv"); v.isValid() && v.value<bool>()) {
+            auto *l = new QLabel;
+            l->setPixmap(
+                QIcon::fromTheme("gtk-dialog-authentication")
+                    .pixmap(QSize(16, 16))
+            );
+            indicator = l;
+        }
+        else if (m_showIcons && !act->icon().isNull()) {
+            auto *l = new QLabel;
+            l->setPixmap(
+                act->icon().pixmap(QSize(16, 16))
+            );
+            indicator = l;
+        }
     }
 }
 

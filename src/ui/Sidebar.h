@@ -10,11 +10,11 @@ namespace Aero {
         Q_OBJECT
 
         QWidget     *textWrap, *m_seeAlsoLabel;
-        QVBoxLayout *navV, *m_seeAlsoV;
-        QFormLayout *m_itemsL;
+        QVBoxLayout *navV;
+        QFormLayout *m_itemsL, *m_seeAlsoL;
 
         QGraphicsOpacityEffect *m_sidebarTextEffect;
-        bool m_fadeInText, m_fadeOutText;
+        bool m_fadeInText, m_fadeOutText, m_showIcons;
 
         QAction *m_goHome;
 
@@ -26,7 +26,8 @@ namespace Aero {
         Sidebar(
             QAction *goHome = nullptr,
             int initialWidth = 0,
-            QWidget *parent = nullptr
+            QWidget *parent = nullptr,
+            bool showIcons = false
         );
 
         void addItem(QAction *act); // When an destination is clicked, it emits ::triggered()
