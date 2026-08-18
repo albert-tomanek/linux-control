@@ -17,6 +17,7 @@
 #include <QColor>
 #include <QRegularExpression>
 #include <QPushButton>
+#include <QtWidgets>
 #include <algorithm>
 
 // Data gathering
@@ -133,11 +134,26 @@ InstalledUpdatesPage::InstalledUpdatesPage(Aero::Sidebar *sidebar, QWidget *pare
     contentV->addWidget(Win7::hSeparator());
 
     // "Organize" command bar
-    QHBoxLayout *toolH = nullptr;
-    auto *toolBar = Win7::commandBar(&toolH);
-    toolH->addWidget(Win7::dropdownLabel("Organize"));
-    toolH->addStretch(1);
-    Win7::addCommandBarIcons(toolH);
+    auto *toolBar = new QToolBar;
+    {
+        auto *tb = new QToolButton;
+        tb->setText("Organize");
+        auto *m = new QMenu(tb);
+        m->addAction("Test");
+        tb->setMenu(m);
+        tb->setPopupMode(QToolButton::InstantPopup);
+        toolBar->addWidget(tb);
+    }
+
+    auto addExpander = [](QToolBar *tb) {
+        QWidget* exp = new QWidget;
+        exp->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        tb->addWidget(exp);
+    };
+
+    addExpander(toolBar);
+    toolBar->addAction(QIcon::fromTheme("browser-help"), QString());
+
     contentV->addWidget(toolBar);
 
     // Updates tree
