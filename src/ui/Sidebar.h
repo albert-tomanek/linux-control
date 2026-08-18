@@ -12,6 +12,7 @@ namespace Aero {
         QWidget     *textWrap, *m_seeAlsoLabel;
         QVBoxLayout *navV;
         QFormLayout *m_itemsL, *m_seeAlsoL;
+        int m_initialWidth;
 
         QGraphicsOpacityEffect *m_sidebarTextEffect;
         bool m_fadeInText, m_fadeOutText, m_showIcons;
@@ -32,6 +33,8 @@ namespace Aero {
 
         void addItem(QAction *act); // When an destination is clicked, it emits ::triggered()
         void addSeeAlso(QAction *act);
+
+        QSize sizeHint() const override;
 
     private:
         void widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator);

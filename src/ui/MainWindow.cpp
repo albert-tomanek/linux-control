@@ -19,6 +19,7 @@
 #include <QStatusBar>
 #include <QMenuBar>
 #include <QMenu>
+#include <QSplitter>
 #include <QAction>
 #include <QSizeGrip>
 #include <QLayoutItem>
@@ -847,20 +848,19 @@ bool MainWindow::launchApplet(QString id)
 
 QWidget *MainWindow::buildCategoryPage(const QString &currentCategory)
 {
-    auto *page = new QWidget;
+    auto *page = new QSplitter(Qt::Horizontal);
+    page->setHandleWidth(1);
     page->setObjectName("categoryPage");
-    page->setStyleSheet("#categoryPage { background: #FFFFFF; }");
-    auto *root = new QHBoxLayout(page);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
+    page->setStyleSheet("#categoryPage { background: #DCE0E8; }");
 
     auto *sidebarClip = buildNavSidebar(currentCategory);
-    root->addWidget(sidebarClip);
+    page->addWidget(sidebarClip);
 
     // ---- Right content pane ----------------------------------------------
     auto *contentWrap = new QWidget;
     contentWrap->setObjectName("categoryContent");
     contentWrap->setStyleSheet("#categoryContent { background: #FFFFFF; }");
+    contentWrap->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto *contentV = new QVBoxLayout(contentWrap);
     contentV->setContentsMargins(18, 14, 18, 14);
     contentV->setSpacing(0);
@@ -1043,7 +1043,7 @@ QWidget *MainWindow::buildCategoryPage(const QString &currentCategory)
     }
 
     contentV->addStretch(1);
-    root->addWidget(contentWrap, 1);
+    page->addWidget(contentWrap);
 
     // sidebarClip slides from 0 to 195; sidebar inside stays full-width so text
     // never reflows. The content pane rides rightward naturally as the clip grows.

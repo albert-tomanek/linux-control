@@ -14,20 +14,21 @@ using namespace Aero;
 static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline);
 
 QString kStyleSheet = (
-    "QScrollArea { background: transparent; border: none; }"
+    ""//"QScrollArea { background: transparent; border: none; }"
 );
 
 Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIcons) :
     QScrollArea(parent),
     m_goHome(goHome),
     m_showIcons(showIcons),
+    m_initialWidth(initialWidth),
     m_fadeInText(false),
     m_fadeOutText(false)
 {
     /* This */
-    this->setFixedWidth(initialWidth);
     this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     this->setFrameShape(QFrame::NoFrame);
     this->setWidgetResizable(true);
     this->setStyleSheet(kStyleSheet);
@@ -43,10 +44,6 @@ Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIc
 
     auto *pane = new QFrame;
     pane->setObjectName("navPane");
-    pane->setFixedWidth(168);
-    pane->setStyleSheet(
-        "#navPane { background: #F1F4F9; border-right: 1px solid #DCE0E8; }"
-        );
     auto *outerV = new QVBoxLayout(pane);
     outerV->setContentsMargins(0, 0, 0, 0);
     outerV->setSpacing(0);
@@ -153,6 +150,11 @@ void Sidebar::addSeeAlso(QAction *act)
     }
     else
         m_seeAlsoL->addRow(nullptr, w);
+}
+
+QSize Sidebar::sizeHint() const
+{
+    return QSize(m_initialWidth, QScrollArea::sizeHint().height());
 }
 
 void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicator)

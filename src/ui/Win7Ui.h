@@ -33,6 +33,7 @@
 #include <QPixmap>
 #include <QPolygonF>
 #include <QScrollArea>
+#include <QSplitter>
 #include <QToolButton>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -131,10 +132,17 @@ inline QVBoxLayout *pageScaffold(QWidget *page, QScrollArea *sidebar,
 {
     page->setObjectName("win7Page");
     page->setStyleSheet(QStringLiteral("#win7Page { background: #FFFFFF; }"));
+
+    auto *sp = new QSplitter(Qt::Horizontal);
+    sp->setHandleWidth(1);
+    sp->setStyleSheet("QSplitter::handle { background-color: #DCE0E8; }");
+
     auto *root = new QHBoxLayout(page);
     root->setContentsMargins(0, 0, 0, 0);
     root->setSpacing(0);
-    root->addWidget(sidebar);
+    root->addWidget(sp);
+
+    sp->addWidget(sidebar);
 
     auto *content = new QWidget;
     content->setObjectName("win7PageContent");
@@ -146,10 +154,9 @@ inline QVBoxLayout *pageScaffold(QWidget *page, QScrollArea *sidebar,
 
     if (fixedWidth > 0) {
         content->setFixedWidth(fixedWidth);
-        root->addWidget(content, 0);
-        root->addStretch(1);
+        sp->addWidget(content);
     } else {
-        root->addWidget(content, 1);
+        sp->addWidget(content);
     }
     return contentV;
 }
