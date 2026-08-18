@@ -1,5 +1,6 @@
 #include <AeroQt/util/objecteventlistener.h>
 #include <AeroQt/util/props.h>
+#include <AeroQt/branding.h>
 
 #include <functional>
 
@@ -12,10 +13,6 @@ using namespace Aero;
 // convert SidebarLink to QAction somehow
 
 static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline);
-
-QString kStyleSheet = (
-    ""//"QScrollArea { background: transparent; border: none; }"
-);
 
 Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIcons) :
     QScrollArea(parent),
@@ -31,14 +28,22 @@ Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIc
     this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     this->setFrameShape(QFrame::NoFrame);
     this->setWidgetResizable(true);
-    this->setStyleSheet(kStyleSheet);
 
     /* Palette */
 
+    // Won't work while QSS is applied at root by libAeroQt
+
+    // QPalette pal = viewport()->palette();
+    // pal.setColor(QPalette::Base, QColor("#F1F4F9"));
+    // viewport()->setPalette(pal);
     // QPalette pal = palette();
     // pal.setColor(QPalette::WindowText, QColor("#151c55"));
     // setPalette(pal);
-    setStyleSheet("color: #151c55;");
+
+    if (Aero::Branding::reportedBuild() >= 7600)
+        setStyleSheet("color: #151c55;");
+    else
+        setStyleSheet("color: white;");
 
     /* Children */
 
