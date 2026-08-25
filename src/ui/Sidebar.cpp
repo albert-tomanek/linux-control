@@ -1,5 +1,6 @@
 #include <AeroQt/util/objecteventlistener.h>
 #include <AeroQt/util/props.h>
+#include <AeroQt/util/scopefn.h>
 #include <AeroQt/branding.h>
 
 #include <functional>
@@ -47,22 +48,26 @@ Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIc
 
     /* Children */
 
-    auto *pane = new QFrame;
-    pane->setObjectName("navPane");
-    auto *outerV = new QVBoxLayout(pane);
+    auto *outerV = new QVBoxLayout;
     outerV->setContentsMargins(0, 0, 0, 0);
     outerV->setSpacing(0);
 
-    this->setWidget(pane);
+    this->setWidget(new QFrame + also {
+        it->setObjectName("navPane");
+        it->setLayout(outerV);
+    });
 
     // Text lives in a child widget so a fade effect touches only the text,
     // never the pane background.
-    this->textWrap = new QWidget;
-    textWrap->setStyleSheet("background: transparent;");
-    this->navV = new QVBoxLayout(textWrap);
-    navV->setContentsMargins(12, 14, 8, 10);
-    navV->setSpacing(0);
-    outerV->addWidget(textWrap);
+    outerV->addWidget(
+        this->textWrap = new QWidget + also {
+            it->setStyleSheet("background: transparent;");
+            it->setLayout(this->navV = new QVBoxLayout + also {
+                it->setContentsMargins(12, 14, 8, 10);
+                it->setSpacing(0);
+            });
+        }
+    );
 
     /* Effects */
     {
@@ -71,26 +76,25 @@ Sidebar::Sidebar(QAction *goHome, int initialWidth, QWidget *parent, bool showIc
         m_sidebarTextEffect->setOpacity(1.0);
     }
 
-    m_itemsL = new QFormLayout;
-    m_itemsL->setSpacing(6);
-    m_itemsL->setHorizontalSpacing(0);
-    navV->addLayout(m_itemsL);
+    navV->addLayout(m_itemsL = new QFormLayout + also {
+        it->setSpacing(6);
+        it->setHorizontalSpacing(0);
+    });
 
     navV->addStretch(1);
 
-    m_seeAlsoLabel = new QLabel("See also");
-    QFont f = m_seeAlsoLabel->font();
-    f.setPointSize(8);
-    m_seeAlsoLabel->setFont(f);
-    m_seeAlsoLabel->setStyleSheet("color: #666666; background: transparent;");
-    m_seeAlsoLabel->hide();
-    navV->addWidget(m_seeAlsoLabel);
+    navV->addWidget(m_seeAlsoLabel = new QLabel("See also") + also {
+        QFont f = it->font();
+        f.setPointSize(8);
+        it->setFont(f);
+        it->setStyleSheet("color: #666666; background: transparent;");
+        it->hide();
+    });
 
-    m_seeAlsoL = new QFormLayout;
-    m_seeAlsoL->setContentsMargins(0, 8, 0, 0);
-    m_seeAlsoL->setSpacing(6);
-    m_itemsL->setHorizontalSpacing(0);
-    navV->addLayout(m_seeAlsoL);
+    navV->addLayout(m_seeAlsoL = new QFormLayout + also {
+        it->setContentsMargins(0, 8, 0, 0);
+        it->setSpacing(6);
+    });
 
     if (m_goHome)
     {
@@ -108,11 +112,12 @@ void Sidebar::setFadeInText(bool b)
     auto *fadeEffect = new QGraphicsOpacityEffect(textWrap);
     textWrap->setGraphicsEffect(fadeEffect);
     fadeEffect->setOpacity(0.0);
-    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", this);
-    fadeAnim->setStartValue(0.0);
-    fadeAnim->setEndValue(1.0);
-    fadeAnim->setDuration(2000);
-    fadeAnim->setEasingCurve(QEasingCurve::OutCubic);
+    auto *fadeAnim = new QPropertyAnimation(fadeEffect, "opacity", this) + also {
+        it->setStartValue(0.0);
+        it->setEndValue(1.0);
+        it->setDuration(2000);
+        it->setEasingCurve(QEasingCurve::OutCubic);
+    };
 
     QTimer::singleShot(0, this, [fadeAnim]() { fadeAnim->start(); });
 }
@@ -166,13 +171,13 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
 {
     auto triggerAction = [=](){
         if (m_fadeOutText) {
-            auto *anim = new QPropertyAnimation(m_sidebarTextEffect, "opacity", m_sidebarTextEffect);
-            anim->setStartValue(1.0);
-            anim->setEndValue(0.0);
-            anim->setDuration(300);
-            anim->setEasingCurve(QEasingCurve::InCubic);
-            QObject::connect(anim, &QPropertyAnimation::finished, act, &QAction::trigger);
-            anim->start(QAbstractAnimation::DeleteWhenStopped);
+            (new QPropertyAnimation(m_sidebarTextEffect, "opacity", m_sidebarTextEffect) + also {
+                it->setStartValue(1.0);
+                it->setEndValue(0.0);
+                it->setDuration(300);
+                it->setEasingCurve(QEasingCurve::InCubic);
+                QObject::connect(it, &QPropertyAnimation::finished, act, &QAction::trigger);
+            })->start(QAbstractAnimation::DeleteWhenStopped);
         }
         else {
             QMetaObject::invokeMethod(act, &QAction::trigger, Qt::QueuedConnection);
@@ -186,14 +191,15 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
     if (act->isCheckable()) {
         /* Act is part of a group of destinations that switch */
 
-        auto *but = new QLabel;
+        auto *but = new QLabel + also {
+            it->setText(act->text());
+            it->setToolTip(act->toolTip());
+            it->setWhatsThis(act->whatsThis());
 
-        but->setText(act->text());
-        but->setToolTip(act->toolTip());
-        but->setWhatsThis(act->whatsThis());
+            it->setWordWrap(true);
+        };
 
         underlineOnHover(but, [=](){ return act->isEnabled(); });
-        but->setWordWrap(true);
 
         onEvent(but, QEvent::MouseButtonRelease, [=](QEvent *evt) {
             triggerAction();
@@ -205,9 +211,9 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
                 bind_prop(ag, "enabled", indicator, "text", &QActionGroup::triggered, true, [=](auto _) {   // We're not actually binding to "enabled", we're just using this func for brevity and to call syncOnCreate
                     bool isSelected = ag->checkedAction() == act;
 
-                    QFont font = but->font();
-                    font.setBold(isSelected);
-                    but->setFont(font);
+                    but->setFont(but->font() + also {
+                        it.setBold(isSelected);
+                    });
 
                     return QVariant(isSelected ? "<strong>\u25cf</strong>" : "");
                 });
@@ -218,13 +224,14 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
         widget = wa->defaultWidget();
     }
     else {
-        auto *but = new QLabel;
+        auto *but = new QLabel + also {
+            it->setText(act->text());
+            it->setToolTip(act->toolTip());
+            it->setWhatsThis(act->whatsThis());
 
-        but->setText(act->text());
-        but->setToolTip(act->toolTip());
-        but->setWhatsThis(act->whatsThis());
+            it->setWordWrap(true);
+        };
 
-        but->setWordWrap(true);
         underlineOnHover(but, [=](){ return act->isEnabled(); });
 
         onEvent(but, QEvent::MouseButtonRelease, [=](QEvent *evt) {
@@ -237,19 +244,19 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
     /* Fill the indicator if it hasn't been filled yet */
     if (!indicator) {
         if (QVariant v = act->property("elevatedPriv"); v.isValid() && v.value<bool>()) {
-            auto *l = new QLabel;
-            l->setPixmap(
-                QIcon::fromTheme("gtk-dialog-authentication")
-                    .pixmap(QSize(16, 16))
-            );
-            indicator = l;
+            indicator = new QLabel + also {
+                it->setPixmap(
+                    QIcon::fromTheme("gtk-dialog-authentication")
+                        .pixmap(QSize(16, 16))
+                );
+            };
         }
         else if (m_showIcons && !act->icon().isNull()) {
-            auto *l = new QLabel;
-            l->setPixmap(
-                act->icon().pixmap(QSize(16, 16))
-            );
-            indicator = l;
+            indicator = new QLabel + also {
+                it->setPixmap(
+                    act->icon().pixmap(QSize(16, 16))
+                );
+            };
         }
     }
 }
@@ -258,14 +265,14 @@ void Sidebar::widgetForAction(QAction *act, QWidget *&widget, QWidget *&indicato
 static void underlineOnHover(QWidget *but, std::function<bool()> shouldUnderline)
 {
     onEvent(but, QEvent::Enter, [=](QEvent *) {
-        QFont f = but->font();
-        f.setUnderline(shouldUnderline());
-        but->setFont(f);
+        but->setFont(but->font() + also {
+            it.setUnderline(shouldUnderline());
+        });
     });
 
     onEvent(but, QEvent::Leave, [=](QEvent *) {
-        QFont f = but->font();
-        f.setUnderline(false);
-        but->setFont(f);
+        but->setFont(but->font() + also {
+            it.setUnderline(false);
+        });
     });
 }
