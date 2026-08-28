@@ -20,6 +20,8 @@
 #include <QtWidgets>
 #include <algorithm>
 
+#include <AeroQt/infostrip.h>
+
 // Data gathering
 QHash<QString, QString> InstalledUpdatesPage::repositoryMap()
 {
@@ -174,13 +176,11 @@ InstalledUpdatesPage::InstalledUpdatesPage(Aero::Sidebar *sidebar, QWidget *pare
     contentV->addWidget(m_tree, 1);
 
     // Status bar: item count
-    QHBoxLayout *statusH = nullptr;
-    auto *statusBar = Win7::statusPanel(36, &statusH);
+    auto *statusBar = new Aero::InfoStrip;
+    QHBoxLayout *statusH = statusBar->childLayout();
 
-    auto *statusIcon = new QLabel;
-    statusIcon->setPixmap(themeIcon({"system-software-update",
-                                     "preferences-system"}).pixmap(24, 24));
-    statusH->addWidget(statusIcon);
+    statusBar->setIcon(themeIcon({"system-software-update",
+                                     "preferences-system"}));
 
     m_countLbl = Win7::label("0 items", 9, "#1F1F1F");
     statusH->addWidget(m_countLbl);
