@@ -15,6 +15,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+#include <AeroQt/usericon.h>
+
 #include <pwd.h>
 #include <grp.h>
 #include <unistd.h>
@@ -94,37 +96,6 @@ QList<SidebarLink> UserAccountsPage::sidebarSeeAlso()
     };
 }
 
-// Render the avatar as a rounded, framed thumbnail; fall back to a theme icon
-// when the user has no picture of their own.
-static QPixmap avatarPixmap(const QString &path, int size)
-{
-    QPixmap src;
-    if (!path.isEmpty())
-        src.load(path);
-    if (src.isNull())
-        src = themeIcon({"user-identity", "avatar-default",
-                         "system-users"}).pixmap(size, size);
-
-    QPixmap out(size, size);
-    out.fill(Qt::transparent);
-    QPainter p(&out);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setRenderHint(QPainter::SmoothPixmapTransform);
-
-    QPainterPath clip;
-    clip.addRoundedRect(QRectF(0, 0, size, size), 6, 6);
-    p.setClipPath(clip);
-    const QPixmap scaled = src.scaled(size, size, Qt::KeepAspectRatioByExpanding,
-                                      Qt::SmoothTransformation);
-    p.drawPixmap((size - scaled.width()) / 2, (size - scaled.height()) / 2, scaled);
-
-    p.setClipping(false);
-    p.setPen(QPen(QColor("#9DA7B5"), 1));
-    p.setBrush(Qt::NoBrush);
-    p.drawRoundedRect(QRectF(0.5, 0.5, size - 1, size - 1), 6, 6);
-    return out;
-}
-
 // Page
 UserAccountsPage::UserAccountsPage(Aero::Sidebar *sidebar, QWidget *parent)
     : QWidget(parent)
@@ -174,10 +145,8 @@ UserAccountsPage::UserAccountsPage(Aero::Sidebar *sidebar, QWidget *parent)
     card->setContentsMargins(0, 0, 0, 0);
     card->setSpacing(14);
 
-    auto *avatar = new QLabel;
-    avatar->setFixedSize(96, 96);
-    avatar->setPixmap(avatarPixmap(acct.picturePath, 96));
-    avatar->setStyleSheet("background: transparent;");
+    auto *avatar = new Aero::UserIcon(Aero::UserIcon::Size_60);
+    avatar->setIcon(QIcon(QPixmap(acct.picturePath)));
     card->addWidget(avatar, 0, Qt::AlignTop);
 
     auto *summary = new QVBoxLayout;
