@@ -131,11 +131,11 @@ inline QVBoxLayout *pageScaffold(QWidget *page, QScrollArea *sidebar,
                                  int topMargin = 18)
 {
     page->setObjectName("win7Page");
-    // page->setStyleSheet(QStringLiteral("#win7Page { background: #FFFFFF; }"));
+    page->setStyleSheet(QStringLiteral("#win7Page { background: #FFFFFF; }"));
 
     auto *sp = new QSplitter(Qt::Horizontal);
     sp->setHandleWidth(1);
-    // sp->setStyleSheet("QSplitter::handle { background-color: #DCE0E8; }");
+    sp->setStyleSheet("QSplitter::handle { background-color: #DCE0E8; }");
 
     auto *root = new QHBoxLayout(page);
     root->setContentsMargins(0, 0, 0, 0);
@@ -146,8 +146,8 @@ inline QVBoxLayout *pageScaffold(QWidget *page, QScrollArea *sidebar,
 
     auto *content = new QWidget;
     content->setObjectName("win7PageContent");
-    // content->setStyleSheet(
-        // QStringLiteral("#win7PageContent { background: #FFFFFF; }"));
+    content->setStyleSheet(
+        QStringLiteral("#win7PageContent { background: #FFFFFF; }"));
     auto *contentV = new QVBoxLayout(content);
     contentV->setContentsMargins(28, topMargin, 28, bottomMargin);
     contentV->setSpacing(0);

@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     // No setApplicationDisplayName: Qt appends it to every window/dialog title.
     app.setWindowIcon(themeIcon({"preferences-system"}));
 
-    Aero::registerStylesheet(&app);
+    // Aero::registerStylesheet(&app);
     new ScrollBarUnstyler(&app);   // native scroll bars; owned by the app
 
     MainWindow w;
