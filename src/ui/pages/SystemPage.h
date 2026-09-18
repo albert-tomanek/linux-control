@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 class QGridLayout;
@@ -13,15 +14,15 @@ class QEvent;
 // The "System" detail page, a Linux-flavoured take on the Windows 7
 // "View basic information about your computer" screen. All values are gathered
 // live from the running machine (/etc/os-release, /proc, QSysInfo).
-class SystemPage : public QWidget {
+class SystemPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit SystemPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit SystemPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 signals:
     // Emitted when the "Rating" row is clicked. MainWindow routes this to the

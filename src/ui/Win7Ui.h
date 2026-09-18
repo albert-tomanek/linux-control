@@ -142,8 +142,6 @@ inline QVBoxLayout *pageScaffold(QWidget *page, QScrollArea *sidebar,
     root->setSpacing(0);
     root->addWidget(sp);
 
-    sp->addWidget(sidebar);
-
     auto *content = new QWidget;
     content->setObjectName("win7PageContent");
     content->setStyleSheet(

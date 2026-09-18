@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 class QVBoxLayout;
@@ -16,14 +17,14 @@ class QVBoxLayout;
 // module (kcm_access, kcm_kwin_effects for the screen magnifier, kcm_colors for
 // high contrast, kcm_mouse, kcm_cursortheme), which are always present with
 // Plasma.
-class EaseOfAccessPage : public QWidget {
+class EaseOfAccessPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit EaseOfAccessPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit EaseOfAccessPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // Append an icon + blue link that opens `cmd` when clicked.

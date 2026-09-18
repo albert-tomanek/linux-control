@@ -530,8 +530,8 @@ QList<SidebarLink> ProgramsFeaturesPage::sidebarSeeAlso()
 }
 
 // Page
-ProgramsFeaturesPage::ProgramsFeaturesPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+ProgramsFeaturesPage::ProgramsFeaturesPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     // The Win7 warning-dialog sound, loaded once so it's ready to play instantly
     // when the uninstall/reinstall dialog opens.
@@ -539,7 +539,7 @@ ProgramsFeaturesPage::ProgramsFeaturesPage(Aero::Sidebar *sidebar, QWidget *pare
         "/usr/share/sounds/Windows 7/og/Windows Exclamation.wav"));
     m_dialogSound.setVolume(1.0f);
 
-    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/0);
+    auto *contentV = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/0);
     // The list frame (command bar + tree + status strip) is full-bleed, so the
     // column itself carries no horizontal padding; only the header text below is
     // indented, via its own inset sub-layout.

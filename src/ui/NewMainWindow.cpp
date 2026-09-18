@@ -14,6 +14,8 @@
 
 #include "NewMainWindow.h"
 
+#include "all_pages.h"
+
 NewMainWindow::NewMainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::NewMainWindow)
@@ -47,12 +49,20 @@ NewMainWindow::~NewMainWindow()
 
 void NewMainWindow::makePages()
 {
-    m_br->addPage("/", [=](auto _) { return this->makeHomePage(); }) + also {
+    m_br->addPage("/", [=](auto args) { return this->makeHomePage(); }) + also {
         it->setText("Control Center");
         it->setIcon(QIcon::fromTheme("systemsettings"));
     };
 
     populateKcms();
+
+#define ADD_PAGE(PageClassName)  \
+    m_nativePages += m_br->addPage(QString("/native/") + #PageClassName , [=](auto args) -> QWidget* { return new PageClassName(m_br, nullptr); }) + also {   \
+        it->setText(#PageClassName);  \
+    };
+
+    FOREACH_PAGE_CLASS(ADD_PAGE);
+#undef ADD_PAGE
 
     // Pages that are actually actions:
 
@@ -162,7 +172,7 @@ void NewMainWindow::populateKcms()
             return createModuleContainer(kcmModule);
         };
 
-        m_kcmActions += m_br->addPage("/kcm/" + id, makeWidget) + also {
+        m_kcmPages += m_br->addPage("/kcm/" + id, makeWidget) + also {
             it->setText(kcm.name().isEmpty() ? id : kcm.name());
             it->setToolTip(kcm.description());
             it->setIcon(QIcon::fromTheme(kcm.iconName()));
@@ -174,10 +184,16 @@ QWidget *NewMainWindow::makeHomePage()
 {
     auto *p = new Aero::Page("Settings", nullptr);
 
-    p->layout()->addWidget(new Aero::ActionPgph("KCM Settings Pages") + also {
-        for (auto *act: m_kcmActions) {
+    p->layout()->addWidget(new Aero::ActionPgph("Native Settings Pages") + also {
+        for (auto *act: m_nativePages) {
             it->addAction(act);
-            qDebug()<<act;
+        }
+        it->setIcon(QIcon::fromTheme("systemsettings"));
+    });
+
+    p->layout()->addWidget(new Aero::ActionPgph("KCM Settings Pages") + also {
+        for (auto *act: m_kcmPages) {
+            it->addAction(act);
         }
         it->setIcon(QIcon::fromTheme("systemsettings"));
     });

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 
@@ -16,14 +17,14 @@ class QScrollArea;
 // (~/.face or the AccountsService icon). Every editing action hands off to KDE's
 // user-manager module (`kcm_users`), which already prompts for the credentials
 // needed to change a password, name, picture or account type.
-class UserAccountsPage : public QWidget {
+class UserAccountsPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit UserAccountsPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit UserAccountsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     struct Account {

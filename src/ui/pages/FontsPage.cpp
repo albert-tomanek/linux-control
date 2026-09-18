@@ -196,12 +196,12 @@ QList<SidebarLink> FontsPage::sidebarSeeAlso()
 }
 
 // Page
-FontsPage::FontsPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+FontsPage::FontsPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     m_families = gatherFamilies();
 
-    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/0,
+    auto *contentV = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/0,
                                         /*fixedWidth=*/700);
     // The list frame (command bar + font grid + status strip) is full-bleed, so
     // the column itself carries no horizontal padding; only the header text is

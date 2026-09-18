@@ -121,8 +121,8 @@ QList<SidebarLink> PowerOptionsPage::sidebarSeeAlso()
 }
 
 // Page
-PowerOptionsPage::PowerOptionsPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+PowerOptionsPage::PowerOptionsPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     bool ok = false;
     QStringList profiles = availableProfiles(ok);
@@ -131,7 +131,7 @@ PowerOptionsPage::PowerOptionsPage(Aero::Sidebar *sidebar, QWidget *parent)
     // Fixed-width content column, left-aligned with the rest filled white,
     // matching the Linux Firewall page so this screen sits at the same width
     // as the app's other detail pages.
-    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+    auto *contentV = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/20,
                                         /*fixedWidth=*/700);
 
     // Page title.

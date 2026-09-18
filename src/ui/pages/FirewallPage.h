@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 class QVBoxLayout;
@@ -19,15 +20,15 @@ class QVBoxLayout;
 //   * /etc/ufw/user.rules     -> the count of configured allow/deny rules
 // It only reads this state; it never changes it. Toggling the firewall in KDE
 // settings rewrites those files, so reopening this page reflects the change.
-class FirewallPage : public QWidget {
+class FirewallPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit FirewallPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit FirewallPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // Live firewall facts, read once in the constructor from the ufw config

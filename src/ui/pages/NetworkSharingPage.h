@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 class QVBoxLayout;
@@ -12,15 +13,15 @@ class QVBoxLayout;
 // Windows 7 "View your basic network information and set up connections"
 // screen. The network map, active-network panel, and connection name are
 // populated from the live machine (/proc/net/route, /sys/class/net, QHostInfo).
-class NetworkSharingPage : public QWidget {
+class NetworkSharingPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit NetworkSharingPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit NetworkSharingPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // Live network facts, collected once in the constructor.

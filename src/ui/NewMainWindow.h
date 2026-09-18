@@ -13,7 +13,8 @@ class NewMainWindow : public QMainWindow
 
     Aero::Browser *m_br;
 
-    QList<QAction *> m_kcmActions;
+    QList<QAction *> m_nativePages;
+    QList<QAction *> m_kcmPages;
 
 public:
     explicit NewMainWindow(QWidget *parent = nullptr);

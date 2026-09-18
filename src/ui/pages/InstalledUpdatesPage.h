@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include <QList>
 #include <QHash>
 
@@ -18,15 +19,15 @@ class QLabel;
 // /var/log/pacman.log. Each `upgraded foo (a -> b)` line is an update that was
 // installed; we keep the most recent version per package and group the rows by
 // the repository that ships the package (resolved once via `pacman -Sl`).
-class InstalledUpdatesPage : public QWidget {
+class InstalledUpdatesPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit InstalledUpdatesPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit InstalledUpdatesPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // One installed update: the latest recorded upgrade of a package.

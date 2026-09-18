@@ -46,8 +46,8 @@ QList<SidebarLink> LinuxUpdatePage::sidebarSeeAlso()
     return { Nav::to("Installed Updates", PageId::InstalledUpdates) };
 }
 
-LinuxUpdatePage::LinuxUpdatePage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+LinuxUpdatePage::LinuxUpdatePage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     // ID-scoped backgrounds throughout: a declaration-only stylesheet acts as
     // `* { ... }`, matching every descendant and forcing them (scroll bars
@@ -69,7 +69,6 @@ LinuxUpdatePage::LinuxUpdatePage(Aero::Sidebar *sidebar, QWidget *parent)
     auto *statusRoot = new QHBoxLayout(statusView);
     statusRoot->setContentsMargins(0, 0, 0, 0);
     statusRoot->setSpacing(0);
-    statusRoot->addWidget(sidebar);
 
     auto *contentWrap = new QWidget;
     contentWrap->setObjectName("luContentWrap");

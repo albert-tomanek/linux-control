@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include "perf/WeiBenchmark.h"
 
 class QScrollArea;
@@ -17,13 +18,13 @@ class QFrame;
 // the base score (the minimum subscore) in a glossy badge, and a "Rate this
 // computer" action that runs the live benchmark engine behind a modal progress
 // dialog. A details view exposes the raw measured metrics for calibration.
-class PerformancePage : public QWidget {
+class PerformancePage : public PageBase {
     Q_OBJECT
 public:
-    explicit PerformancePage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit PerformancePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

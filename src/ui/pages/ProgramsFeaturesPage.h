@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include <QList>
 #include <QDate>
 #include <QSoundEffect>
@@ -22,15 +23,15 @@ class QLabel;
 // columns. The Publisher column shows the software's actual developer
 // (AppStream data) or, for AUR packages, its AUR maintainer, see
 // applyPublishers().
-class ProgramsFeaturesPage : public QWidget {
+class ProgramsFeaturesPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit ProgramsFeaturesPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit ProgramsFeaturesPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // One installed program (explicitly-installed package).

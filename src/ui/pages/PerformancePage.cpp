@@ -48,12 +48,12 @@ QList<SidebarLink> PerformancePage::sidebarSeeAlso()
     return { Nav::to("Action Center", PageId::ActionCenter) };
 }
 
-PerformancePage::PerformancePage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+PerformancePage::PerformancePage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     m_bench = new WeiBenchmark(this);
 
-    auto *v = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+    auto *v = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/20,
                                  /*fixedWidth=*/-1, /*topMargin=*/16);
 
     auto linkStyle = QStringLiteral(

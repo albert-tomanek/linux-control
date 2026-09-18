@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 
 class QScrollArea;
 class QVBoxLayout;
@@ -18,15 +19,15 @@ class QVBoxLayout;
 // the other pages use (ufw config for the firewall, an antivirus binary probe,
 // the polkit authority for UAC); the remaining rows mirror Windows' wording with
 // plausible fixed values, as there is no Linux equivalent to query.
-class ActionCenterPage : public QWidget {
+class ActionCenterPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit ActionCenterPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit ActionCenterPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 private:
     // Live facts backing the Security rows, gathered once in the constructor.

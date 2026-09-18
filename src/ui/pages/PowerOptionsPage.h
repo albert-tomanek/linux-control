@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include <QList>
 #include <QHash>
 
@@ -37,15 +38,15 @@ class QEvent;
 // When PPD is absent (typical on a desktop with no profile switching) the page
 // degrades to a single, selected "Balanced (recommended)" plan, mirroring what
 // Windows shows on hardware that exposes no alternative plans.
-class PowerOptionsPage : public QWidget {
+class PowerOptionsPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit PowerOptionsPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit PowerOptionsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 protected:
     // Lets a click on a plan's name label select that plan, like Windows.

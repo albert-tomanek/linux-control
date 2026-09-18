@@ -319,12 +319,12 @@ QLabel *SystemPage::addInfoRow(QGridLayout *grid, int row,
 }
 
 // Page
-SystemPage::SystemPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+SystemPage::SystemPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     const SysInfo info = gatherInfo();
 
-    auto *contentV = Win7::pageScaffold(this, sidebar);
+    auto *contentV = Win7::pageScaffold(this, nullptr);
 
     // Page title.
     contentV->addWidget(

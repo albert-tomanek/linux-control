@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include <QList>
 #include <QHash>
 #include <QColor>
@@ -22,14 +23,14 @@ class QPixmap;
 // `plasma-apply-colorscheme` (no privileges needed, it writes the user's own
 // kdeglobals). The bottom row hands off to the matching KDE modules for
 // wallpaper, colours, sounds and the screen locker.
-class PersonalizationPage : public QWidget {
+class PersonalizationPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit PersonalizationPage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit PersonalizationPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 protected:
     // Clicking a swatch frame applies that scheme.

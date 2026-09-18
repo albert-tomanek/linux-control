@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QStringList>
 #include "PageId.h"
+#include "PageBase.h"
 #include <QSet>
 #include <QHash>
 #include <QDateTime>
@@ -18,14 +19,14 @@ class QVBoxLayout;
 class QStackedWidget;
 class QTreeWidget;
 
-class LinuxUpdatePage : public QWidget {
+class LinuxUpdatePage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit LinuxUpdatePage(Aero::Sidebar *sidebar, QWidget *parent = nullptr);
+    explicit LinuxUpdatePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    static QList<SidebarLink> sidebarLinks();
-    static QList<SidebarLink> sidebarSeeAlso();
+    QList<SidebarLink> sidebarLinks() override;
+    QList<SidebarLink> sidebarSeeAlso() override;
 
 public slots:
     void checkForUpdates();

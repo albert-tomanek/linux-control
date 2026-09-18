@@ -4,6 +4,8 @@
 #include <QVector>
 #include <QString>
 
+#include "PageId.h"
+#include "PageBase.h"
 #include "DeviceItem.h"
 #include "DeviceData.h"      // DeviceCategory
 #include "PrinterScanner.h"  // Printer
@@ -20,10 +22,10 @@ class QLabel;
 // All data is real: hardware comes from the sysfs device scanner ported from
 // linux-devmgmt, and print queues come from CUPS. The scan runs on a worker
 // thread so navigating to the page never blocks the UI.
-class DevicesAndPrintersPage : public QWidget {
+class DevicesAndPrintersPage : public PageBase {
     Q_OBJECT
 public:
-    explicit DevicesAndPrintersPage(QWidget *parent = nullptr);
+    explicit DevicesAndPrintersPage(Aero::Browser *browser, QWidget *parent = nullptr);
 
 private:
     struct ScanResult {

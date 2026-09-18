@@ -62,8 +62,8 @@ DevicesAndPrintersPage::ScanResult DevicesAndPrintersPage::runScan() {
     return r;
 }
 
-DevicesAndPrintersPage::DevicesAndPrintersPage(QWidget *parent)
-    : QWidget(parent) {
+DevicesAndPrintersPage::DevicesAndPrintersPage(Aero::Browser *browser, QWidget *parent)
+    : PageBase(browser, parent) {
     // ID-scoped: a declaration-only sheet would act as `* { ... }` and drag
     // the icon lists' scroll bars into non-native stylesheet rendering.
     setObjectName("dpPage");

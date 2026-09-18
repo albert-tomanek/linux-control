@@ -59,12 +59,12 @@ void EaseOfAccessPage::addSettingLink(QVBoxLayout *into, const QString &iconName
 }
 
 // Page
-EaseOfAccessPage::EaseOfAccessPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+EaseOfAccessPage::EaseOfAccessPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     // Windows 7 lays the content out at a fixed width and leaves the rest of
     // the window blank on the right rather than stretching to fill it.
-    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+    auto *contentV = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/20,
                                         /*fixedWidth=*/700);
 
     // Page title.

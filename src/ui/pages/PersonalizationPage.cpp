@@ -178,15 +178,15 @@ QList<SidebarLink> PersonalizationPage::sidebarSeeAlso()
 }
 
 // Page
-PersonalizationPage::PersonalizationPage(Aero::Sidebar *sidebar, QWidget *parent)
-    : QWidget(parent)
+PersonalizationPage::PersonalizationPage(Aero::Browser *browser,  QWidget *parent)
+    : PageBase(browser, parent)
 {
     m_schemes   = gatherSchemes();
     m_currentId = currentSchemeId();
 
     // Windows 7 lays the content out at a fixed width and leaves the rest of
     // the window blank on the right rather than stretching to fill it.
-    auto *contentV = Win7::pageScaffold(this, sidebar, /*bottomMargin=*/20,
+    auto *contentV = Win7::pageScaffold(this, nullptr, /*bottomMargin=*/20,
                                         /*fixedWidth=*/700);
 
     // Page title.
