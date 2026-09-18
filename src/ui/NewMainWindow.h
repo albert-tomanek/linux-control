@@ -11,7 +11,9 @@ class NewMainWindow : public QMainWindow
 {
     Q_OBJECT
 
-    Aero::Browser *b;
+    Aero::Browser *m_br;
+
+    QList<QAction *> m_kcmActions;
 
 public:
     explicit NewMainWindow(QWidget *parent = nullptr);
@@ -20,6 +22,9 @@ public:
 private:
     void makePages();
     void makeActions();
+    void populateKcms();
+
+    QWidget *makeHomePage();
 
     Ui::NewMainWindow *ui;
 };
