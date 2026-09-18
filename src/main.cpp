@@ -4,6 +4,7 @@
 #include <QStringList>
 #include <QTimer>
 #include "MainWindow.h"
+#include "NewMainWindow.h"
 #include "IconHelper.h"
 #include <AeroQt/stylesheet.h>
 
@@ -98,7 +99,8 @@ int main(int argc, char *argv[]) {
     // Aero::registerStylesheet(&app);
     new ScrollBarUnstyler(&app);   // native scroll bars; owned by the app
 
-    MainWindow w;
+    // MainWindow w;
+    NewMainWindow w;
     w.show();
     return app.exec();
 }

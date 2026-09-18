@@ -17,10 +17,12 @@ find_package(Cups REQUIRED)
 
 add_compile_options(-g)
 
-add_executable(controlpanel
+qt_add_executable(controlpanel
     src/main.cpp
     src/ui/LinkLabel.h
     src/ui/MainWindow.cpp
+    src/ui/NewMainWindow.cpp
+    src/ui/NewMainWindow.ui
     src/ui/PageRegistry.cpp
     src/ui/CategoryWidget.cpp
     src/ui/pages/LinuxUpdatePage.cpp
