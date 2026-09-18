@@ -21,7 +21,6 @@ add_executable(controlpanel
     src/main.cpp
     src/ui/LinkLabel.h
     src/ui/MainWindow.cpp
-    src/ui/Sidebar.cpp
     src/ui/PageRegistry.cpp
     src/ui/CategoryWidget.cpp
     src/ui/pages/LinuxUpdatePage.cpp

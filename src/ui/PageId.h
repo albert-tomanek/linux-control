@@ -5,7 +5,7 @@
 #include <QList>
 #include <utility>
 
-#include "Sidebar.h"
+#include <AeroQt/sidebar.h>
 
 // ---------------------------------------------------------------------------
 // Page identity.

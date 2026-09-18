@@ -7,7 +7,7 @@
 #include <QGraphicsOpacityEffect>
 #include "PageId.h"
 
-#include "Sidebar.h"
+#include <AeroQt/sidebar.h>
 
 class QScrollArea;
 class QLineEdit;

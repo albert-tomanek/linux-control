@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QToolButton>
 #include <QPushButton>
+#include <QActionGroup>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -34,6 +35,7 @@
 #include <QMessageBox>
 #include <AeroQt/navbuttons.h>
 #include <AeroQt/insetwindow.h>
+#include <AeroQt/sidebar.h>
 #include "Categories.h"
 #include "Branding.h"
 #include "PageId.h"
@@ -733,7 +735,7 @@ Aero::Sidebar *MainWindow::buildNavSidebar(const QString &currentCategory)
         if (cat == currentCategory)
             act->setChecked(true);
 
-        bar->addItem(act);
+        bar->addAction(act);
 
         connect(act, &QAction::triggered, [=]() {
             this->navigateTo(cat);
@@ -796,7 +798,7 @@ Aero::Sidebar *MainWindow::buildSubpageSidebar(const QList<SidebarLink> &links,
     };
 
     for (const SidebarLink &sl : links)
-        bar->addItem(actionForLink(sl));
+        bar->addAction(actionForLink(sl));
 
     for (const SidebarLink &sl : seeAlso)
         bar->addSeeAlso(actionForLink(sl));
