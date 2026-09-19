@@ -1,5 +1,5 @@
 #include "UserAccountsPage.h"
-#include "Commands.h"
+
 #include "LinkLabel.h"
 #include "IconHelper.h"
 #include "Win7Ui.h"
@@ -80,19 +80,18 @@ UserAccountsPage::Account UserAccountsPage::gatherAccount()
 }
 
 // Sidebar
-QList<SidebarLink> UserAccountsPage::sidebarLinks()
+QList<QAction *> UserAccountsPage::sidebarLinks()
 {
     return {
-        Nav::command("Manage another account", kcm("kcm_users")),
-        Nav::command("Change User Account Control settings", kcm("kcm_users")),
+        findPageForKcm(m_browser, "kcm_users"),
     };
 }
 
-QList<SidebarLink> UserAccountsPage::sidebarSeeAlso()
+QList<QAction *> UserAccountsPage::sidebarSeeAlso()
 {
     return {
         Nav::plain("Parental Controls"),
-        Nav::command("Credential Manager", kcm("kcm_kwallet5")),
+        findPageForKcm(m_browser, "kcm_kwallet5"),
     };
 }
 

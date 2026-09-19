@@ -20,12 +20,12 @@ class QScrollArea;
 class UserAccountsPage : public PageBase {
     Q_OBJECT
 
-    Q_CLASSINFO("PagePath", "/");
+    Q_CLASSINFO("PagePath", "/system-administration/users");
 public:
     explicit UserAccountsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 private:
     struct Account {

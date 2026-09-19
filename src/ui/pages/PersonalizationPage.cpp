@@ -1,5 +1,5 @@
 #include "PersonalizationPage.h"
-#include "Commands.h"
+
 #include "LinkLabel.h"
 #include "IconHelper.h"
 #include "Win7Ui.h"
@@ -159,19 +159,19 @@ QPixmap PersonalizationPage::swatchPixmap(const Scheme &s) const
 }
 
 // Sidebar
-QList<SidebarLink> PersonalizationPage::sidebarLinks()
+QList<QAction *> PersonalizationPage::sidebarLinks()
 {
     return {
-        Nav::command("Change desktop icons", kcm("kcm_icons")),
-        Nav::command("Change mouse pointers", kcm("kcm_cursortheme")),
-        Nav::command("Change your account picture", kcm("kcm_users")),
+        findPageForKcm(m_browser, "kcm_icons"),
+        findPageForKcm(m_browser, "kcm_cursortheme"),
+        findPageForKcm(m_browser, "kcm_users"),
     };
 }
 
-QList<SidebarLink> PersonalizationPage::sidebarSeeAlso()
+QList<QAction *> PersonalizationPage::sidebarSeeAlso()
 {
     return {
-        Nav::command("Display", kcm("kcm_kscreen")),
+        findPageForKcm(m_browser, "kcm_kscreen"),
         Nav::plain("Taskbar and Start Menu"),
         Nav::to("Ease of Access Center", PageId::EaseOfAccess),
     };

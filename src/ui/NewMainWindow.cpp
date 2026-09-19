@@ -1,6 +1,7 @@
 #include "ui_NewMainWindow.h"
 
 #include <QtWidgets>
+#include <QFileInfo>
 
 #include <KPluginMetaData>
 #include <KCModuleLoader>
@@ -33,9 +34,31 @@ NewMainWindow::NewMainWindow(QWidget *parent)
         it->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     });
 
+    // Sidebar
+
     ui->splitter->setStretchFactor(0, 0);
     ui->splitter->setStretchFactor(1, 1);
     ui->splitter->setSizes(QList<int>{1, 10000});
+
+    connect(m_br, &Aero::Browser::pageChanged, [=]{
+        ui->sb->setVisible(
+            qobject_cast<HomePage *>(m_br->page()) == nullptr
+        );
+
+        ui->sb->clear();
+
+        if (auto *pg = qobject_cast<PageBase *>(m_br->page())) {
+            for (auto *act: pg->sidebarLinks())
+                if (act)
+                    ui->sb->addAction(act);
+
+            for (auto *act: pg->sidebarSeeAlso())
+                if (act)
+                    ui->sb->addSeeAlso(act);
+        }
+    });
+
+    //
 
     makePages();
     makeActions();
@@ -59,9 +82,16 @@ void NewMainWindow::makePages()
     populateKcms();
 
 #define ADD_PAGE(PageClassName)  \
-    m_nativePages += m_br->addPage(QString("/native/") + #PageClassName , [=](auto args) -> QWidget* { return new PageClassName(m_br, nullptr); }) + also {   \
-        it->setText(#PageClassName);  \
-    };
+    {     \
+        QString path;   \
+        if (int idx = PageClassName::staticMetaObject.indexOfClassInfo("PagePath"); idx != -1)  \
+            path = PageClassName::staticMetaObject.classInfo(idx).value();  \
+        else    \
+            path = "/" #PageClassName;  \
+        m_nativePages += m_br->addPage(path, [=](auto args) -> QWidget* { return new PageClassName(m_br, nullptr); }) + also {   \
+            it->setText(#PageClassName);  \
+        };          \
+    }
 
     FOREACH_PAGE_CLASS(ADD_PAGE);
 #undef ADD_PAGE
@@ -83,6 +113,25 @@ void NewMainWindow::makeActions()
 {
     connect(ui->aQuit, &QAction::triggered, [=]() {
         qApp->quit();
+    });
+
+    // Shell commands
+
+    auto runShell = [=](QStringList args) {
+        if (!QProcess::startDetached(args.first(), args.mid(1)))
+            QMessageBox::critical(this, "Error", QString("Error running the following command:\n\n") + args.join(" "));
+    };
+
+    connect(ui->aDevMgmt, &QAction::triggered, [=]() {
+        runShell({"devmgmt"});
+    });
+
+    connect(ui->aGetWidgets, &QAction::triggered, [=]() {
+        runShell({"knewstuff-dialog6", "/usr/share/knsrcfiles/plasmoids.knsrc"});
+    });
+
+    connect(ui->aWidgetExplorer, &QAction::triggered, [=]() {
+        runShell({"qdbus6", "org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell.toggleWidgetExplorer"});
     });
 }
 
@@ -175,32 +224,19 @@ void NewMainWindow::populateKcms()
         };
 
         QString settingsCateg = kcm.value("X-KDE-System-Settings-Parent-Category");
+        QString kcmName = QFileInfo(kcm.fileName()).completeBaseName();
 
-        m_kcmPages += m_br->addPage(settingsCateg.isEmpty() ? ("/" + kcm.fileName().split("/").last()) : ("/" + settingsCateg + "/" + kcm.fileName().split("/").last()), makeWidget) + also {
+        m_kcmPages += m_br->addPage(
+            settingsCateg.isEmpty() ?
+                QString("/%1").arg(kcmName) :
+                QString("/%1/%2").arg(settingsCateg).arg(kcmName),
+            makeWidget)
+        + also {
             it->setText(kcm.name().isEmpty() ? id : kcm.name());
             it->setToolTip(kcm.description());
             it->setIcon(QIcon::fromTheme(kcm.iconName()));
         };
     }
-}
 
-QWidget *NewMainWindow::makeHomePage()
-{
-    auto *p = new Aero::Page("Settings", nullptr);
-
-    p->layout()->addWidget(new Aero::ActionPgph("Native Settings Pages") + also {
-        for (auto *act: m_nativePages) {
-            it->addAction(act);
-        }
-        it->setIcon(QIcon::fromTheme("systemsettings"));
-    });
-
-    p->layout()->addWidget(new Aero::ActionPgph("KCM Settings Pages") + also {
-        for (auto *act: m_kcmPages) {
-            it->addAction(act);
-        }
-        it->setIcon(QIcon::fromTheme("systemsettings"));
-    });
-
-    return p;
+    qDebug()<<m_br->allPaths();
 }

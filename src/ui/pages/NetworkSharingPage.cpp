@@ -1,5 +1,5 @@
 #include "NetworkSharingPage.h"
-#include "Commands.h"
+
 #include "IconHelper.h"
 #include "Win7Ui.h"
 
@@ -76,15 +76,15 @@ NetworkSharingPage::NetInfo NetworkSharingPage::gatherInfo()
 }
 
 // Sidebar
-QList<SidebarLink> NetworkSharingPage::sidebarLinks()
+QList<QAction *> NetworkSharingPage::sidebarLinks()
 {
     return {
-        Nav::command("Change adapter settings", kcm("kcm_networkmanagement")),
+        findPageForKcm(m_browser, "kcm_networkmanagement"),
         Nav::plain("Change advanced sharing settings"),
     };
 }
 
-QList<SidebarLink> NetworkSharingPage::sidebarSeeAlso()
+QList<QAction *> NetworkSharingPage::sidebarSeeAlso()
 {
     return {
         Nav::plain("HomeGroup"),

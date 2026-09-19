@@ -28,7 +28,7 @@
 #include <QDir>
 #include <QRegularExpression>
 
-QList<SidebarLink> LinuxUpdatePage::sidebarLinks()
+QList<QAction *> LinuxUpdatePage::sidebarLinks()
 {
     // "Check for updates" is handled specially by MainWindow (it triggers this
     // page's own refresh rather than navigating away), so it carries no target.
@@ -41,7 +41,7 @@ QList<SidebarLink> LinuxUpdatePage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> LinuxUpdatePage::sidebarSeeAlso()
+QList<QAction *> LinuxUpdatePage::sidebarSeeAlso()
 {
     return { Nav::to("Installed Updates", PageId::InstalledUpdates) };
 }

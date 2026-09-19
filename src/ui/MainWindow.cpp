@@ -40,7 +40,7 @@
 #include "Branding.h"
 #include "PageId.h"
 #include "PageRegistry.h"
-#include "Commands.h"
+
 #include "pages/LinuxUpdatePage.h"
 #include "pages/SystemPage.h"
 #include "pages/InstalledUpdatesPage.h"

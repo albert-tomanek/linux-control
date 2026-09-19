@@ -45,8 +45,8 @@ public:
     explicit PowerOptionsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 protected:
     // Lets a click on a plan's name label select that plan, like Windows.

@@ -1,5 +1,4 @@
 #include "ActionCenterPage.h"
-#include "Commands.h"
 #include "ConfFile.h"
 #include "IconHelper.h"
 #include "Win7Ui.h"
@@ -45,17 +44,17 @@ ActionCenterPage::AcInfo ActionCenterPage::gatherInfo()
 }
 
 // Sidebar
-QList<SidebarLink> ActionCenterPage::sidebarLinks()
+QList<QAction *> ActionCenterPage::sidebarLinks()
 {
     return {
         Nav::plain("Change Action Center settings"),
-        Nav::command("Change User Account Control settings", kcm("kcm_users")),
+        findPageForKcm(m_browser, "kcm_users"),
         Nav::plain("View archived messages"),
         Nav::to("View performance information", PageId::Performance),
     };
 }
 
-QList<SidebarLink> ActionCenterPage::sidebarSeeAlso()
+QList<QAction *> ActionCenterPage::sidebarSeeAlso()
 {
     return {
         Nav::plain("Backup and Restore"),

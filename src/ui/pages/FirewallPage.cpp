@@ -77,7 +77,7 @@ FirewallPage::FwInfo FirewallPage::gatherInfo()
 }
 
 // Sidebar
-QList<SidebarLink> FirewallPage::sidebarLinks()
+QList<QAction *> FirewallPage::sidebarLinks()
 {
     return {
         Nav::plain("Allow a program or feature through Linux Firewall"),
@@ -89,7 +89,7 @@ QList<SidebarLink> FirewallPage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> FirewallPage::sidebarSeeAlso()
+QList<QAction *> FirewallPage::sidebarSeeAlso()
 {
     return {
         Nav::to("Action Center", PageId::ActionCenter),

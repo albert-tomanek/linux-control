@@ -100,7 +100,7 @@ QList<InstalledUpdatesPage::UpdateInfo> InstalledUpdatesPage::gatherUpdates()
 }
 
 // Sidebar entries
-QList<SidebarLink> InstalledUpdatesPage::sidebarLinks()
+QList<QAction *> InstalledUpdatesPage::sidebarLinks()
 {
     return {
         Nav::to("Uninstall a program", PageId::ProgramsFeatures),
@@ -108,7 +108,7 @@ QList<SidebarLink> InstalledUpdatesPage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> InstalledUpdatesPage::sidebarSeeAlso()
+QList<QAction *> InstalledUpdatesPage::sidebarSeeAlso()
 {
     return {};
 }

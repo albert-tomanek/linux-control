@@ -5,6 +5,7 @@
 #include <AeroQt/util/props.h>
 
 #include "PageId.h"
+#include <AeroQt/page.h>
 
 class PageBase : public QWidget
 {
@@ -18,12 +19,13 @@ public:
 
     void navigateTo(QString path);
 
-
-    virtual QList<SidebarLink> sidebarLinks();
-    virtual QList<SidebarLink> sidebarSeeAlso();
+    virtual QList<QAction *> sidebarLinks();
+    virtual QList<QAction *> sidebarSeeAlso();
 
     /** Do this in subclasses to determine where you want the page to be placed by NewMainWindow.cpp
      * Q_CLASSINFO("PagePath", "/foo/bar");
      */
 };
+
+QAction *findPageForKcm(Aero::Browser *br, QString name);
 

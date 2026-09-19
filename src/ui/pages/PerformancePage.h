@@ -23,8 +23,8 @@ class PerformancePage : public PageBase {
 public:
     explicit PerformancePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

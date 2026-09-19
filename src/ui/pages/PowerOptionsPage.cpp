@@ -100,7 +100,7 @@ void PowerOptionsPage::setActiveProfile(const QString &profileId)
 }
 
 // Sidebar
-QList<SidebarLink> PowerOptionsPage::sidebarLinks()
+QList<QAction *> PowerOptionsPage::sidebarLinks()
 {
     // "Control Panel Home" is prepended by the sidebar shell itself, so it must
     // not be repeated here.
@@ -112,7 +112,7 @@ QList<SidebarLink> PowerOptionsPage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> PowerOptionsPage::sidebarSeeAlso()
+QList<QAction *> PowerOptionsPage::sidebarSeeAlso()
 {
     return {
         Nav::to("Personalization", PageId::Personalization),

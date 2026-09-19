@@ -23,8 +23,8 @@ class EaseOfAccessPage : public PageBase {
 public:
     explicit EaseOfAccessPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 private:
     // Append an icon + blue link that opens `cmd` when clicked.

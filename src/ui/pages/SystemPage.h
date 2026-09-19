@@ -21,8 +21,8 @@ public:
     explicit SystemPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 signals:
     // Emitted when the "Rating" row is clicked. MainWindow routes this to the

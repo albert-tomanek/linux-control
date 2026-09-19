@@ -24,8 +24,8 @@ class FontsPage : public PageBase {
 public:
     explicit FontsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 protected:
     // Row clicks select a family; a double-click opens it in the font viewer.

@@ -516,7 +516,7 @@ QList<ProgramsFeaturesPage::ProgramInfo> ProgramsFeaturesPage::gatherPrograms()
 }
 
 // Sidebar entries
-QList<SidebarLink> ProgramsFeaturesPage::sidebarLinks()
+QList<QAction *> ProgramsFeaturesPage::sidebarLinks()
 {
     return {
         Nav::to("View installed updates", PageId::InstalledUpdates),
@@ -524,7 +524,7 @@ QList<SidebarLink> ProgramsFeaturesPage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> ProgramsFeaturesPage::sidebarSeeAlso()
+QList<QAction *> ProgramsFeaturesPage::sidebarSeeAlso()
 {
     return {};
 }

@@ -11,14 +11,21 @@ void PageBase::navigateTo(QString path)
     m_browser->navigateTo(path);
 }
 
-QList<SidebarLink> PageBase::sidebarLinks()
+QList<QAction *> PageBase::sidebarLinks()
 {
     return {};
 }
 
-QList<SidebarLink> PageBase::sidebarSeeAlso()
+QList<QAction *> PageBase::sidebarSeeAlso()
 {
     return {};
 }
 
 
+QAction *findPageForKcm(Aero::Browser *br, QString name)
+{
+    for (auto path: br->allPaths())
+        if (path.split("/").last() == name)
+            return br->actionForPath(path);
+    return nullptr;
+}

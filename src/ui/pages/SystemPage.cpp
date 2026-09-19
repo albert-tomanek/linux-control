@@ -1,5 +1,5 @@
 #include "SystemPage.h"
-#include "Commands.h"
+
 #include "IconHelper.h"
 #include "Win7Ui.h"
 #include "Branding.h"
@@ -240,17 +240,17 @@ bool SystemPage::eventFilter(QObject *watched, QEvent *event)
 }
 
 // Sidebar
-QList<SidebarLink> SystemPage::sidebarLinks()
+QList<QAction *> SystemPage::sidebarLinks()
 {
     return {
-        Nav::command("Device Manager", kDeviceManagerCmd),
+        window()->findChild<QAction *>("aDevMgmt"),
         Nav::plain("Remote settings"),
         Nav::plain("System protection"),
         Nav::plain("Advanced system settings"),
     };
 }
 
-QList<SidebarLink> SystemPage::sidebarSeeAlso()
+QList<QAction *> SystemPage::sidebarSeeAlso()
 {
     return {
         Nav::to("Action Center", PageId::ActionCenter),

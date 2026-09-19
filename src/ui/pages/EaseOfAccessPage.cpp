@@ -1,5 +1,4 @@
 #include "EaseOfAccessPage.h"
-#include "Commands.h"
 #include "LinkLabel.h"
 #include "IconHelper.h"
 #include "Win7Ui.h"
@@ -20,16 +19,16 @@ static const QStringList kMouse       = { "kcmshell6", "kcm_mouse" };
 static const QStringList kCursorTheme = { "kcmshell6", "kcm_cursortheme" };
 
 // Sidebar
-QList<SidebarLink> EaseOfAccessPage::sidebarLinks()
+QList<QAction *> EaseOfAccessPage::sidebarLinks()
 {
     return {};
 }
 
-QList<SidebarLink> EaseOfAccessPage::sidebarSeeAlso()
+QList<QAction *> EaseOfAccessPage::sidebarSeeAlso()
 {
     return {
         Nav::to("Personalization", PageId::Personalization),
-        Nav::command("Display", kcm("kcm_kscreen")),
+        findPageForKcm(m_browser, "kcm_screen"),
     };
 }
 

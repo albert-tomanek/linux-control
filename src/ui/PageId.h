@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QAction>
 #include <QStringList>
 #include <QList>
 #include <utility>
@@ -50,6 +51,7 @@ struct LinkTarget {
     PageId      page = PageId::None;   // used when kind == Page
     QStringList command;               // used when kind == Command
     QString     applet;                // used when kind == Applet
+
 };
 
 // One entry in a page's left-nav sidebar: the text to show plus its target.
@@ -62,49 +64,49 @@ struct SidebarLink {
 //   return {
 //       Nav::plain("Turn Linux Firewall on or off"),
 //       Nav::to("Network and Sharing Center", PageId::NetworkSharing),
-//       Nav::command("Change adapter settings", kcm("kcm_networkmanagement")),
+//       Nav::command.*kcm\((.*)\)\),
 //   };
 namespace Nav {
 
 // A link that navigates to another detail page.
-inline SidebarLink to(const QString &text, PageId page)
+inline QAction *to(const QString &text, PageId page)
 {
     LinkTarget t;
     t.kind = LinkTarget::Page;
     t.page = page;
-    return { text, t };
+    return nullptr;
 }
 
 // A link back to the Control Panel home view.
-inline SidebarLink home(const QString &text)
+inline QAction *home(const QString &text)
 {
     LinkTarget t;
     t.kind = LinkTarget::Home;
-    return { text, t };
+    return nullptr;
 }
 
 // A link that launches an external program (e.g. a KDE settings module).
-inline SidebarLink command(const QString &text, QStringList cmd)
+inline QAction *command(const QString &text, QStringList cmd)
 {
     LinkTarget t;
     t.kind    = LinkTarget::Command;
     t.command = std::move(cmd);
-    return { text, t };
+    return nullptr;
 }
 
 // A link that opens an in-app applet dialog, e.g. "datetime" or "sound".
-inline SidebarLink applet(const QString &text, QString id)
+inline QAction *applet(const QString &text, QString id)
 {
     LinkTarget t;
     t.kind   = LinkTarget::Applet;
     t.applet = std::move(id);
-    return { text, t };
+    return nullptr;
 }
 
 // A decorative link that renders like the rest but has no destination yet.
-inline SidebarLink plain(const QString &text)
+inline QAction *plain(const QString &text)
 {
-    return { text, LinkTarget{} };
+    return nullptr;
 }
 
 } // namespace Nav

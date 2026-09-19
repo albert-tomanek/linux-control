@@ -29,8 +29,8 @@ class PersonalizationPage : public PageBase {
 public:
     explicit PersonalizationPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 protected:
     // Clicking a swatch frame applies that scheme.

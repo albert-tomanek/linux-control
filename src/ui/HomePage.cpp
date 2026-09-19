@@ -11,12 +11,21 @@ HomePage::HomePage(Aero::Browser *br, QWidget *parent)
     makeCategs();
 
     for (auto pgPath: m_browser->allPaths()) {
+        bool sorted = false;
+
         for (auto categ: m_categs.keys())
             if (pgPath.startsWith("/"+categ+"/")) {
                 m_categs[categ]->addAction(
                     m_browser->actionForPath(pgPath)
                 );
+                sorted = true;
+                break;
             }
+
+        if (!sorted)
+            m_categOther->addAction(
+                m_browser->actionForPath(pgPath)
+            );
     }
 }
 
@@ -55,4 +64,8 @@ void HomePage::makeCategs()
     makeCateg("applications-defaults", "Default applications");
     makeCateg("removable-storage");
 
+    m_categOther = new Aero::ActionPgph("Other") + also {
+        it->setFixedWidth(240);
+        m_flow->addWidget(it);
+    };
 }

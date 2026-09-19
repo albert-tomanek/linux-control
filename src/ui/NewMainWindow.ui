@@ -100,8 +100,8 @@
        <property name="frameShape">
         <enum>QFrame::Shape::NoFrame</enum>
        </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+       <property name="sizeAdjustPolicy">
+        <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
        </property>
        <property name="widgetResizable">
         <bool>true</bool>
@@ -111,7 +111,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>305</width>
+          <width>77</width>
           <height>494</height>
          </rect>
         </property>
@@ -157,6 +157,30 @@
    </property>
    <property name="text">
     <string>&amp;Quit</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="aGetWidgets">
+   <property name="text">
+    <string>Get widgets</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="aWidgetExplorer">
+   <property name="text">
+    <string>Open Widget Explorer</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="aDevMgmt">
+   <property name="text">
+    <string>Device Manager</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>

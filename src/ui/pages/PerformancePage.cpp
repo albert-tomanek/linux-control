@@ -32,7 +32,7 @@ QString fmt1(double v) { return QLocale::c().toString(v, 'f', 1); }
 
 } // namespace
 
-QList<SidebarLink> PerformancePage::sidebarLinks()
+QList<QAction *> PerformancePage::sidebarLinks()
 {
     return {
         Nav::plain("Adjust visual effects"),
@@ -43,7 +43,7 @@ QList<SidebarLink> PerformancePage::sidebarLinks()
     };
 }
 
-QList<SidebarLink> PerformancePage::sidebarSeeAlso()
+QList<QAction *> PerformancePage::sidebarSeeAlso()
 {
     return { Nav::to("Action Center", PageId::ActionCenter) };
 }

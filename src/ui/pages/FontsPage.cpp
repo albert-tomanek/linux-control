@@ -1,5 +1,5 @@
 #include "FontsPage.h"
-#include "Commands.h"
+
 #include "LinkLabel.h"
 #include "Win7Ui.h"
 
@@ -176,18 +176,17 @@ QList<FontsPage::Family> FontsPage::gatherFamilies()
 }
 
 // Sidebar
-QList<SidebarLink> FontsPage::sidebarLinks()
+QList<QAction *> FontsPage::sidebarLinks()
 {
     return {
-        Nav::command("Font settings", kcm("kcm_fonts")),
+        findPageForKcm(m_browser, "kcm_fonts"),
         Nav::plain("Get more font information online"),
-        Nav::command("Adjust ClearType text", kcm("kcm_fonts")),
         Nav::plain("Find a character"),
         Nav::plain("Change font size"),
     };
 }
 
-QList<SidebarLink> FontsPage::sidebarSeeAlso()
+QList<QAction *> FontsPage::sidebarSeeAlso()
 {
     return {
         Nav::plain("Text Services and Input Language"),

@@ -25,8 +25,8 @@ class LinuxUpdatePage : public PageBase {
 public:
     explicit LinuxUpdatePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
-    QList<SidebarLink> sidebarLinks() override;
-    QList<SidebarLink> sidebarSeeAlso() override;
+    QList<QAction *> sidebarLinks() override;
+    QList<QAction *> sidebarSeeAlso() override;
 
 public slots:
     void checkForUpdates();
