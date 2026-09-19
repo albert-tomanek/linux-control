@@ -46,6 +46,7 @@ qt_add_executable(controlpanel
     src/ui/NewMainWindow.ui
     src/ui/PageRegistry.cpp
     src/ui/PageBase.cpp
+    src/ui/HomePage.cpp
     src/ui/CategoryWidget.cpp
     src/ui/pages/LinuxUpdatePage.cpp
     src/ui/pages/SystemPage.cpp

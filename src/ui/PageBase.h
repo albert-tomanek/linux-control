@@ -18,7 +18,12 @@ public:
 
     void navigateTo(QString path);
 
+
     virtual QList<SidebarLink> sidebarLinks();
     virtual QList<SidebarLink> sidebarSeeAlso();
+
+    /** Do this in subclasses to determine where you want the page to be placed by NewMainWindow.cpp
+     * Q_CLASSINFO("PagePath", "/foo/bar");
+     */
 };
 

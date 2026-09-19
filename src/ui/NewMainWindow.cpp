@@ -13,6 +13,7 @@
 #include <AeroQt/util/deepbind.h>
 
 #include "NewMainWindow.h"
+#include "HomePage.h"
 
 #include "all_pages.h"
 
@@ -49,7 +50,8 @@ NewMainWindow::~NewMainWindow()
 
 void NewMainWindow::makePages()
 {
-    m_br->addPage("/", [=](auto args) { return this->makeHomePage(); }) + also {
+    // m_br->addPage("/", [=](auto args) { return this->makeHomePage(); }) + also {
+    m_br->addPage("/", [=](auto args) { return new HomePage(m_br); }) + also {
         it->setText("Control Center");
         it->setIcon(QIcon::fromTheme("systemsettings"));
     };
@@ -172,7 +174,9 @@ void NewMainWindow::populateKcms()
             return createModuleContainer(kcmModule);
         };
 
-        m_kcmPages += m_br->addPage("/kcm/" + id, makeWidget) + also {
+        QString settingsCateg = kcm.value("X-KDE-System-Settings-Parent-Category");
+
+        m_kcmPages += m_br->addPage(settingsCateg.isEmpty() ? ("/" + kcm.fileName().split("/").last()) : ("/" + settingsCateg + "/" + kcm.fileName().split("/").last()), makeWidget) + also {
             it->setText(kcm.name().isEmpty() ? id : kcm.name());
             it->setToolTip(kcm.description());
             it->setIcon(QIcon::fromTheme(kcm.iconName()));

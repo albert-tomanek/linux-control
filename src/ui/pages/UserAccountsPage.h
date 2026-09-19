@@ -20,6 +20,7 @@ class QScrollArea;
 class UserAccountsPage : public PageBase {
     Q_OBJECT
 
+    Q_CLASSINFO("PagePath", "/");
 public:
     explicit UserAccountsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
