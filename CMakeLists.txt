@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent DBus OpenGL)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent DBus OpenGL QuickWidgets)
 find_package(KF6WidgetsAddons REQUIRED)
 find_package(KF6WindowSystem REQUIRED)
 find_package(KF6KCMUtils REQUIRED)
@@ -63,6 +63,7 @@ target_link_libraries(controlpanel PRIVATE
     Qt6::Concurrent
     Qt6::DBus
     Qt6::OpenGL
+    Qt6::QuickWidgets
     KF6::WidgetsAddons
     KF6::WindowSystem
     KF6::KCMUtils
