@@ -42,6 +42,14 @@ class PowerOptionsPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/PowerOptionsPage";
+	inline static void initAction(QAction *ac)
+	{
+        ac->setText("Power Options");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-system-power-management"));
+	}
+
     explicit PowerOptionsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

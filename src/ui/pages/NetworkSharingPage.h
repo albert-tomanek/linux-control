@@ -17,6 +17,14 @@ class NetworkSharingPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/NetworkSharingPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Network and Sharing Center");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-system-sharing"));
+    }
+
     explicit NetworkSharingPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

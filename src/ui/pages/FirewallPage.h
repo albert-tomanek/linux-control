@@ -24,6 +24,14 @@ class FirewallPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/FirewallPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Firewall");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme(""));
+    }
+
     explicit FirewallPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

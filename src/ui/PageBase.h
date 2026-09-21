@@ -7,6 +7,8 @@
 #include "PageId.h"
 #include <AeroQt/page.h>
 
+// Pages are not cached; they get created anew every time the browser navigates to their location
+
 class PageBase : public QWidget
 {
     Q_OBJECT
@@ -17,13 +19,16 @@ protected:
 public:
     explicit PageBase(Aero::Browser *browser, QWidget *parent = nullptr);
 
-    void navigateTo(QString path);
+    void navigateTo(QString path);  // This lets you control the page browser from within a displayed page
 
     virtual QList<QAction *> sidebarLinks();
     virtual QList<QAction *> sidebarSeeAlso();
 
-    /** Do this in subclasses to determine where you want the page to be placed by NewMainWindow.cpp
-     * Q_CLASSINFO("PagePath", "/foo/bar");
+    /** All subclasses must have these, they're used by NewMainWindow.cpp to figure out where to place the page.
+     *  inline static QString path = "...";
+     *  inline static void initAction(QAction *ac)
+	{
+	}  // Init text, tooltips, etc in the action that opens this page
      */
 };
 

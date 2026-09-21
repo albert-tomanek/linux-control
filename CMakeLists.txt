@@ -37,49 +37,14 @@ add_compile_options(-g)
   set(GENERATED_HEADER "${CMAKE_CURRENT_BINARY_DIR}/include/all_pages.h")
   file(WRITE "${GENERATED_HEADER}" "${UMBRELLA_HEADER_CONTENT}")
 
+file(GLOB_RECURSE sources
+  "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/src/*.h"
+  "${CMAKE_CURRENT_LIST_DIR}/src/*.ui"
+)
 
 qt_add_executable(controlpanel
-    src/main.cpp
-    src/ui/LinkLabel.h
-    # src/ui/MainWindow.cpp
-    src/ui/NewMainWindow.cpp
-    src/ui/NewMainWindow.ui
-    src/ui/PageRegistry.cpp
-    src/ui/PageBase.cpp
-    src/ui/HomePage.cpp
-    src/ui/CategoryWidget.cpp
-    src/ui/pages/LinuxUpdatePage.cpp
-    src/ui/pages/SystemPage.cpp
-    src/ui/pages/InstalledUpdatesPage.cpp
-    src/ui/pages/ProgramsFeaturesPage.cpp
-    src/ui/pages/NetworkSharingPage.cpp
-    src/ui/pages/FirewallPage.cpp
-    src/ui/pages/ActionCenterPage.cpp
-    src/ui/pages/PowerOptionsPage.cpp
-    src/ui/pages/PerformancePage.cpp
-    src/ui/pages/PersonalizationPage.cpp
-    src/ui/pages/FontsPage.cpp
-    src/ui/pages/UserAccountsPage.cpp
-    src/ui/pages/EaseOfAccessPage.cpp
-    src/ui/pages/DevicesAndPrintersPage.cpp
-    src/ui/dialogs/DateTimeDialog.cpp
-    src/ui/dialogs/SoundDialog.cpp
-    src/ui/dialogs/DevicePropertiesDialog.cpp
-    src/ui/dialogs/LinverConfigDialog.cpp
-    src/devices/SysfsScanner.cpp
-    src/devices/PrinterScanner.cpp
-    src/data/WindowsTimeZones.cpp
-    src/perf/WeiBenchmark.cpp
-    src/data/Categories.cpp
-    src/data/SystemAndSecurity.cpp
-    src/data/NetworkAndInternet.cpp
-    src/data/HardwareAndSound.cpp
-    src/data/Programs.cpp
-    src/data/UserAccounts.cpp
-    src/data/AppearanceAndPersonalization.cpp
-    src/data/ClockLanguageRegion.cpp
-    src/data/EaseOfAccess.cpp
-    src/data/Branding.cpp
+  ${sources}
 )
 
 target_include_directories(controlpanel PRIVATE

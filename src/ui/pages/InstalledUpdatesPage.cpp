@@ -259,3 +259,5 @@ void InstalledUpdatesPage::populate(const QList<UpdateInfo> &updatesIn)
     m_countLbl->setText(QString("%1 item%2")
                             .arg(totalItems).arg(totalItems == 1 ? "" : "s"));
 }
+
+

@@ -517,3 +517,5 @@ void PerformancePage::onRateClicked()
     m_dlg->show();
     m_bench->run();
 }
+
+

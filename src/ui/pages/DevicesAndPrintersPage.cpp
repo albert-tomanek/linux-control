@@ -367,3 +367,5 @@ void DevicesAndPrintersPage::launchAddDevice() {
     }
     launchDetached(this, { "bluedevil-wizard" });  // reports "not installed"
 }
+
+

@@ -23,6 +23,14 @@ class ActionCenterPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/ActionCenterPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Action Center");
+        ac->setToolTip("Review recent messages and resolve problems");
+        ac->setIcon(QIcon::fromTheme(""));
+    }
+
     explicit ActionCenterPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

@@ -22,6 +22,14 @@ class FontsPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/FontsPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Fonts");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-desktop-font"));
+    }
+
     explicit FontsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

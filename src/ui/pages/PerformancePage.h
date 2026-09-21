@@ -21,6 +21,14 @@ class QFrame;
 class PerformancePage : public PageBase {
     Q_OBJECT
 public:
+    inline static QString path = "/other/PerformancePage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Performance Information and Tools");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-system-performance"));
+    }
+
     explicit PerformancePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

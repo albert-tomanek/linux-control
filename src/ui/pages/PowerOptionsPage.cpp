@@ -441,3 +441,5 @@ void PowerOptionsPage::onProfilesPropertiesChanged(const QString &interface,
         || invalidated.contains(QStringLiteral("ActiveProfile")))
         syncSelection();
 }
+
+

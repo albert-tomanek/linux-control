@@ -247,6 +247,8 @@ QWidget *ActionCenterPage::buildBottomTask(
 }
 
 // Page
+
+
 ActionCenterPage::ActionCenterPage(Aero::Browser *browser,  QWidget *parent)
     : PageBase(browser, parent)
 {

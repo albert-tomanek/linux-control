@@ -20,8 +20,15 @@ class QScrollArea;
 class UserAccountsPage : public PageBase {
     Q_OBJECT
 
-    Q_CLASSINFO("PagePath", "/system-administration/users");
 public:
+    inline static QString path = "/other/system-administration/users";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("User Accounts");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-system-users"));
+    }
+
     explicit UserAccountsPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

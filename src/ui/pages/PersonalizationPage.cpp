@@ -340,3 +340,5 @@ bool PersonalizationPage::eventFilter(QObject *watched, QEvent *event)
     }
     return QWidget::eventFilter(watched, event);
 }
+
+

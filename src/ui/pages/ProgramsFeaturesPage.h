@@ -27,6 +27,14 @@ class ProgramsFeaturesPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/ProgramsFeaturesPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Programs and Features");
+        ac->setToolTip("Uninstall or change a program");
+        ac->setIcon(QIcon::fromTheme("uninstall"));
+    }
+    
     explicit ProgramsFeaturesPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

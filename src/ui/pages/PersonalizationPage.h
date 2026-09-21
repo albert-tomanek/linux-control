@@ -27,6 +27,14 @@ class PersonalizationPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/PersonalizationPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Personalization");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-desktop-theme-global"));
+    }
+
     explicit PersonalizationPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

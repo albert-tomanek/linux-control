@@ -23,6 +23,14 @@ class LinuxUpdatePage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/LinuxUpdatePage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Linux Update");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("system-software-update"));
+    }
+
     explicit LinuxUpdatePage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

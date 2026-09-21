@@ -16,6 +16,8 @@ class NewMainWindow : public QMainWindow
     QList<QAction *> m_nativePages;
     QList<QAction *> m_kcmPages;
 
+    QAction *m_goHome;
+
 public:
     explicit NewMainWindow(QWidget *parent = nullptr);
     ~NewMainWindow();

@@ -322,3 +322,5 @@ bool FontsPage::eventFilter(QObject *watched, QEvent *event)
     }
     return QWidget::eventFilter(watched, event);
 }
+
+

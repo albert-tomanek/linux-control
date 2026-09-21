@@ -23,6 +23,14 @@ class InstalledUpdatesPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/InstalledUpdatesPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Installed Updates");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme(""));
+    }
+
     explicit InstalledUpdatesPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.

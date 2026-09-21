@@ -18,7 +18,15 @@ class SystemPage : public PageBase {
     Q_OBJECT
 
 public:
-    explicit SystemPage(Aero::Browser *browser,  QWidget *parent = nullptr);
+    inline static QString path = "/other/SystemPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("System Info");
+        ac->setToolTip("View basic information about your computer");
+        ac->setIcon(QIcon::fromTheme("info"));
+    }
+
+    explicit SystemPage(Aero::Browser *browser, QWidget *parent = nullptr);
 
     // Left-nav entries shown by MainWindow's subpage sidebar.
     QList<QAction *> sidebarLinks() override;

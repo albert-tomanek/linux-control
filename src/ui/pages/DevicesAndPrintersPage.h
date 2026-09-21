@@ -25,6 +25,14 @@ class QLabel;
 class DevicesAndPrintersPage : public PageBase {
     Q_OBJECT
 public:
+    inline static QString path = "/other/DevicesAndPrintersPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Devices and Printers");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-devices-printer"));
+    }
+
     explicit DevicesAndPrintersPage(Aero::Browser *browser, QWidget *parent = nullptr);
 
 private:

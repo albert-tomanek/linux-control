@@ -13,7 +13,6 @@ class HomePage : public PageBase
 
     FlowLayout *m_flow;
 
-    Aero::ActionPgph *m_categOther;
     QMap<QString, Aero::ActionPgph *> m_categs;
 
 public:

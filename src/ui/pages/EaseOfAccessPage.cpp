@@ -158,3 +158,5 @@ EaseOfAccessPage::EaseOfAccessPage(Aero::Browser *browser,  QWidget *parent)
     contentV->addLayout(list);
     contentV->addStretch(1);
 }
+
+

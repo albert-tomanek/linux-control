@@ -21,6 +21,14 @@ class EaseOfAccessPage : public PageBase {
     Q_OBJECT
 
 public:
+    inline static QString path = "/other/EaseOfAccessPage";
+    inline static void initAction(QAction *ac)
+    {
+        ac->setText("Ease of Access Center");
+        ac->setToolTip(QString());
+        ac->setIcon(QIcon::fromTheme("preferences-desktop-accessibility"));
+    }
+
     explicit EaseOfAccessPage(Aero::Browser *browser,  QWidget *parent = nullptr);
 
     QList<QAction *> sidebarLinks() override;

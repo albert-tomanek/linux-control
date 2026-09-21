@@ -3,7 +3,7 @@
 #include <QRegularExpression>
 #include <QStringList>
 #include <QTimer>
-#include "MainWindow.h"
+// #include "MainWindow.h"
 #include "NewMainWindow.h"
 #include "IconHelper.h"
 #include <AeroQt/stylesheet.h>

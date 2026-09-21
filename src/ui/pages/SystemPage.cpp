@@ -461,3 +461,5 @@ SystemPage::SystemPage(Aero::Browser *browser,  QWidget *parent)
 
     contentV->addStretch(1);
 }
+
+

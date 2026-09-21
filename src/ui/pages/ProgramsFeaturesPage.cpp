@@ -824,3 +824,5 @@ void ProgramsFeaturesPage::runPackageAction(const QString &pkg, const QString &d
     proc->start(program, args);
     progress->show();
 }
+
+
