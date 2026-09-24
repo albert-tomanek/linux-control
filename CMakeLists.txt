@@ -12,6 +12,7 @@ find_package(KF6WidgetsAddons REQUIRED)
 find_package(KF6WindowSystem REQUIRED)
 find_package(KF6KCMUtils REQUIRED)
 find_package(KF6CoreAddons REQUIRED)
+find_package(KF6Service REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(AeroQt REQUIRED)
@@ -69,6 +70,7 @@ target_link_libraries(controlpanel PRIVATE
     KF6::KCMUtils
     KF6::KCMUtilsCore
     KF6::CoreAddons
+    KF6::Service
     ZLIB::ZLIB
     OpenSSL::Crypto
     AeroQt
