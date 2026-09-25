@@ -23,7 +23,7 @@ class InstalledUpdatesPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/InstalledUpdatesPage";
+    inline static QString path = "/system-administration/kcm_updates";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Installed Updates");

@@ -21,7 +21,7 @@ class EaseOfAccessPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/EaseOfAccessPage";
+    inline static QString path = "/personalization/eoa";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Ease of Access Center");

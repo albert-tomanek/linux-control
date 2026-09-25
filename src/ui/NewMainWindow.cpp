@@ -56,26 +56,20 @@ NewMainWindow::NewMainWindow(QWidget *parent)
             qobject_cast<CategPage *>(m_br->page()) == nullptr
         );
 
-        // Add actions for pages within same folder
+        // Add sidebar actions for pages within same folder
 
-        if (ui->sb->isVisible())
-            if (auto folderName = m_br->path().split("/")[1]; folderName.length()) {
-                auto prefix = QString("/%1/").arg(folderName);
+        if (ui->sb->isVisible()) {
+            auto *grp = prevGrp = new QActionGroup(m_br->page()) + also {
+                it->setExclusive(true);
+            };
 
-                auto *grp = prevGrp = new QActionGroup(m_br->page()) + also {
-                    it->setExclusive(true);
-                };
+            for (QAction *sibling: m_br->children(m_br->path() + let { return it.left(it.lastIndexOf("/")); })) {
+                grp->addAction(sibling);
+                sibling->setChecked(sibling == m_br->actionForPath(m_br->path()));
 
-                for (auto actPath: m_br->allPaths())
-                    if (actPath.startsWith(prefix)) {
-                        auto *act = m_br->actionForPath(actPath);
-
-                        grp->addAction(act);
-                        act->setChecked(actPath == m_br->path());
-
-                        ui->sb->addAction(act);
-                    }
+                ui->sb->addAction(sibling);
             }
+        }
 
         // Add suggested actions
 

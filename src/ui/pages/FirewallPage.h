@@ -24,7 +24,7 @@ class FirewallPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/FirewallPage";
+    inline static QString path = "/network/FirewallPage";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Firewall");

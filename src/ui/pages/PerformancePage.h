@@ -21,7 +21,7 @@ class QFrame;
 class PerformancePage : public PageBase {
     Q_OBJECT
 public:
-    inline static QString path = "/other/PerformancePage";
+    inline static QString path = "/system-administration/PerformancePage";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Performance Information and Tools");

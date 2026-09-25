@@ -18,7 +18,7 @@ class SystemPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/SystemPage";
+    inline static QString path = "/system-administration/kcm_about-distro";
     inline static void initAction(QAction *ac)
     {
         ac->setText("System Info");

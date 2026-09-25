@@ -22,12 +22,12 @@ class FontsPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/FontsPage";
+    inline static QString path = "/appearance/font/kcm_fontinst";
     inline static void initAction(QAction *ac)
     {
-        ac->setText("Fonts");
-        ac->setToolTip(QString());
-        ac->setIcon(QIcon::fromTheme("preferences-desktop-font"));
+        ac->setText("Font management");
+        ac->setToolTip("Install, manage, and preview fonts");
+        ac->setIcon(QIcon::fromTheme("preferences-desktop-font-installer"));
     }
 
     explicit FontsPage(Aero::Browser *browser,  QWidget *parent = nullptr);

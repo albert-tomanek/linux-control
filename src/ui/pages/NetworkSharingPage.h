@@ -17,7 +17,7 @@ class NetworkSharingPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/NetworkSharingPage";
+    inline static QString path = "/network/NetworkSharingPage";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Network and Sharing Center");

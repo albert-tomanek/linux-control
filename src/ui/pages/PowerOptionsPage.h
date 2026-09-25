@@ -42,7 +42,7 @@ class PowerOptionsPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/PowerOptionsPage";
+    inline static QString path = "/system-administration/kcm_powerdevilprofilesconfig";
 	inline static void initAction(QAction *ac)
 	{
         ac->setText("Power Options");

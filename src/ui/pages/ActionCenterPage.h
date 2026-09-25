@@ -23,7 +23,7 @@ class ActionCenterPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/ActionCenterPage";
+    inline static QString path = "/system-administration/action-center";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Action Center");

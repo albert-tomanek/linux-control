@@ -27,6 +27,7 @@ class PersonalizationPage : public PageBase {
     Q_OBJECT
 
 public:
+    // !! NOTE !! This will be done by Borealis. Borelais will provide its own KCM
     inline static QString path = "/other/PersonalizationPage";
     inline static void initAction(QAction *ac)
     {

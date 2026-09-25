@@ -23,7 +23,7 @@ class LinuxUpdatePage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/other/LinuxUpdatePage";
+    inline static QString path = "/system-administration/LinuxUpdatePage";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Linux Update");
