@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QToolBar>
 #include <QFrame>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -74,18 +75,12 @@ DevicesAndPrintersPage::DevicesAndPrintersPage(Aero::Browser *browser, QWidget *
     root->setSpacing(0);
 
     // ---- Command bar (the shared ribbon strip) ---------------------------
-    QHBoxLayout *cmdLayout = nullptr;
-    auto *cmdBar = Win7::commandBar(&cmdLayout);
-    cmdLayout->setContentsMargins(12, 0, 12, 0);
-    cmdLayout->setSpacing(16);
-    auto *addDevice = commandLink("Add a device");
-    auto *addPrinter = commandLink("Add a printer");
-    connect(addDevice,  &LinkLabel::clicked, this, &DevicesAndPrintersPage::launchAddDevice);
-    connect(addPrinter, &LinkLabel::clicked, this, &DevicesAndPrintersPage::launchAddPrinter);
-    cmdLayout->addWidget(addDevice);
-    cmdLayout->addWidget(addPrinter);
-    cmdLayout->addStretch(1);
-    Win7::addCommandBarIcons(cmdLayout);
+    auto *cmdBar = new QToolBar;
+    auto *addDevice = cmdBar->addAction("Add a device");
+    auto *addPrinter = cmdBar->addAction("Add a printer");
+    connect(addDevice,  &QAction::triggered, this, &DevicesAndPrintersPage::launchAddDevice);
+    connect(addPrinter, &QAction::triggered, this, &DevicesAndPrintersPage::launchAddPrinter);
+    // Win7::addCommandBarIcons(cmdLayout);
     root->addWidget(cmdBar);
 
     // ---- Grouped icon view ----------------------------------------------
@@ -152,15 +147,7 @@ DevicesAndPrintersPage::DevicesAndPrintersPage(Aero::Browser *browser, QWidget *
     root->addWidget(content, 1);
 
     // ---- Details pane (the shared status strip) --------------------------
-    QHBoxLayout *dl = nullptr;
-    auto *details = Win7::statusPanel(64, &dl);
-    dl->setContentsMargins(14, 8, 14, 8);
-    dl->setSpacing(12);
-
-    m_detailIcon = new QLabel;
-    m_detailIcon->setFixedSize(48, 48);
-    m_detailIcon->setAlignment(Qt::AlignCenter);
-    dl->addWidget(m_detailIcon, 0, Qt::AlignVCenter);
+    m_details = new Aero::InfoStrip;
 
     auto *textV = new QVBoxLayout;
     textV->setContentsMargins(0, 0, 0, 0);
@@ -178,9 +165,9 @@ DevicesAndPrintersPage::DevicesAndPrintersPage(Aero::Browser *browser, QWidget *
     textV->addWidget(m_detailLine1);
     textV->addWidget(m_detailLine2);
     textV->addStretch(1);
-    dl->addLayout(textV, 1);
+    m_details->childLayout()->addLayout(textV, 1);
 
-    root->addWidget(details);
+    root->addWidget(m_details);
 
     // Selection in one list clears the other, so there is a single global
     // selection driving one details pane.
@@ -323,7 +310,7 @@ void DevicesAndPrintersPage::onSelection(QListWidget *active, QListWidget *other
 void DevicesAndPrintersPage::updateDetails(const ShellDevice *dev) {
     if (!dev) {
         const int total = m_devices.size() + m_printers.size();
-        m_detailIcon->setPixmap(resolveIcon("computer").pixmap(48, 48));
+        m_details->setIcon(resolveIcon("computer"));
         m_detailName->setText(total > 0 ? QString("%1 items").arg(total)
                                         : QString());
         m_detailLine1->clear();
@@ -332,7 +319,7 @@ void DevicesAndPrintersPage::updateDetails(const ShellDevice *dev) {
         return;
     }
 
-    m_detailIcon->setPixmap(resolveIcon(dev->iconName).pixmap(48, 48));
+    m_details->setIcon(resolveIcon(dev->iconName));
     m_detailName->setText(dev->name);
     if (dev->isPrinter) {
         m_detailLine1->setText("Status: " + dev->status);

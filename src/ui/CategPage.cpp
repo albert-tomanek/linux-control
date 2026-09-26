@@ -57,6 +57,10 @@ static QMap<QString, CategoryInfo> loadKcmCategoryInfo()
     return result;
 }
 
+QMap<QString, QString> transplants = {
+    {"/system-administration/kcm_updates", "/software/kcm_updates"}
+};
+
 QAction *CategPage::registerRoot(Aero::Browser *br, QList<KPluginMetaData> allKcms)
 {
     auto categInfo = loadKcmCategoryInfo();
@@ -64,9 +68,10 @@ QAction *CategPage::registerRoot(Aero::Browser *br, QList<KPluginMetaData> allKc
     for (auto it = categInfo.begin(); it != categInfo.end(); ++it) {
         auto categId = it.key();
         auto categ = it.value();
-        auto categPath = categ.parent.isEmpty() ?
-            QString("/%1").arg(categId) :
-            QString("/%1/%2").arg(categ.parent).arg(categId);
+        QString categPath = "/";
+
+        for (QString categId = categ.categ; !categId.isEmpty(); categId = categInfo[categId].parent)
+            categPath.prepend("/" + categId);
 
         if (categId == "rootcategory")
             continue;
@@ -75,7 +80,10 @@ QAction *CategPage::registerRoot(Aero::Browser *br, QList<KPluginMetaData> allKc
             QString kcmCateg = kcm.value("X-KDE-System-Settings-Parent-Category");
 
             if (kcmCateg == categId) {
-                auto kcmPath = categPath + "/" + kcm.pluginId();
+                auto kcmPath = categPath + kcm.pluginId();
+
+                if (transplants.contains(kcmPath))
+                    kcmPath = transplants[kcmPath];
 
                 if (!br->allPaths().contains(kcmPath))
                     br->addPage(kcmPath, [=](auto args) { return new KCMPage(br, kcm); }) + also {
@@ -93,7 +101,17 @@ QAction *CategPage::registerRoot(Aero::Browser *br, QList<KPluginMetaData> allKc
         };
     }
 
-    br->addPage("/other", nullptr) + also {
+    auto addCustomCateg = [&](QString categPath) {
+        return br->addPage(categPath, [=](auto args) { return new CategPage(br, categPath); });
+    };
+
+    addCustomCateg("/software") + also {
+        it->setText("Software");
+        it->setToolTip("Manage the software on this system");
+        it->setIcon(QIcon::fromTheme("system-software-install"));
+    };
+
+    addCustomCateg("/other") + also {
         it->setText("Other");
         it->setIcon(QIcon::fromTheme("systemsettings"));
     };

@@ -3,11 +3,24 @@
 #include <QFileInfo>
 #include <QtWidgets>
 #include <QQuickWidget>
+#include <QQuickItem>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QQmlProperty>
 #include <KCModuleLoader>
 #include <KQuickConfigModule>
 #include <AeroQt/util/scopefn.h>
+
+void tintPageBackground(QQuickItem *root, const QColor &color) {
+    if (!root) return;
+    for (QQuickItem *child : root->childItems()) {
+        if (QByteArray(child->metaObject()->className()).startsWith("QQuickRectangle")
+            && qFuzzyCompare(child->width(), root->width())
+            && qFuzzyCompare(child->height(), root->height())) {
+            child->setProperty("color", color);
+        }
+    }
+}
 
 KCMPage::KCMPage(Aero::Browser *browser, KPluginMetaData kcmMeta, QWidget *parent) :
     PageBase(browser, parent)
@@ -21,14 +34,21 @@ KCMPage::KCMPage(Aero::Browser *browser, KPluginMetaData kcmMeta, QWidget *paren
         return;
     }
 
+    // KCModuleLoader may install its own layout on `this` as a side effect
+    // of constructing the module; remove it before installing mainLayout,
+    // or setLayout() below silently no-ops and nothing is actually managed.
+    if (this->layout()) {
+        delete this->layout();
+    }
+
     QWidget *kcmWidget = module->widget();
 
     if (kcmWidget) {
         // 1. Force the embedded KCM widget to expand and fill available layout space
-        kcmWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        kcmWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
         // 2. Fix QQuickWidget sizing if the KCM uses an underlying QQuickWidget
-        if (auto *quickWidget = kcmWidget->findChild<QQuickWidget *>()) {
+        if (auto *quickWidget = kcmWidget->findChild<QQuickWidget *>()) {               // FIXME: need to change the bg color of this somehow https://github.com/KDE/kcmutils/blob/master/src/qml/components/AbstractKCM.qml
             quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
             quickWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         }
@@ -48,6 +68,7 @@ KCMPage::KCMPage(Aero::Browser *browser, KPluginMetaData kcmMeta, QWidget *paren
 
     buttonBox = new QDialogButtonBox(this) + also {
         it->setContentsMargins(4, 4, 4, 4);
+        it->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         if (buttons.testFlag(KCModule::Apply)) {
             applyBtn = it->addButton(QDialogButtonBox::Apply);
@@ -72,6 +93,8 @@ KCMPage::KCMPage(Aero::Browser *browser, KPluginMetaData kcmMeta, QWidget *paren
             applyBtn->setEnabled(module->needsSave());
         }
     });
+
+    module->load();
 }
 
 QList<QAction *> KCMPage::sidebarLinks()

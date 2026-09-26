@@ -193,32 +193,5 @@ void NewMainWindow::populateKcms()  // Call this only _after_ native pages are a
     ui->sb->setHomeAction(m_goHome);
     addAction(m_goHome);
 
-
-    // 3. Deduplicate plugins by pluginId
-    // QSet<QString> seenIds;
-
-    // for (const KPluginMetaData kcm: plugins) {
-    //     const QString id = kcm.pluginId();
-    //     if (id.isEmpty() || seenIds.contains(id))
-    //         continue;
-
-    //     seenIds.insert(id);
-
-    //     QString settingsCateg = kcm.value("X-KDE-System-Settings-Parent-Category");
-    //     QString kcmName = QFileInfo(kcm.fileName()).completeBaseName();
-
-    //     QString kcmPath = settingsCateg.isEmpty() ?
-    //         QString("/other/%1").arg(kcmName) :
-    //         QString("/%1/%2").arg(settingsCateg).arg(kcmName);
-
-    //     if (!m_br->allPaths().contains(kcmPath))    // If the KCM we are inserting has been supplemented by a native page, don't add it.
-    //         m_kcmPages += m_br->addPage(kcmPath, [=](auto args) { return new KCMPage(m_br, kcm); }) + also {
-    //             it->setText(kcm.name().isEmpty() ? id : kcm.name());
-    //             it->setToolTip(kcm.description());
-    //             it->setIcon(QIcon::fromTheme(kcm.iconName()));
-    //             it->setCheckable(true);     // This lets us have it checkable in the sidebar
-    //         };
-    // }
-
     qDebug()<<m_br->allPaths();
 }

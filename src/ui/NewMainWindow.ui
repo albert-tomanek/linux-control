@@ -60,6 +60,9 @@
        </item>
        <item>
         <widget class="QLineEdit" name="lineEdit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="maximumSize">
           <size>
            <width>200</width>

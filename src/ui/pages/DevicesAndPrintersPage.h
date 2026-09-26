@@ -4,6 +4,8 @@
 #include <QVector>
 #include <QString>
 
+#include <AeroQt/infostrip.h>
+
 #include "PageId.h"
 #include "PageBase.h"
 #include "DeviceItem.h"
@@ -58,7 +60,7 @@ private:
     QLabel      *m_statusLabel    = nullptr;
 
     // Bottom details pane.
-    QLabel *m_detailIcon  = nullptr;
+    Aero::InfoStrip *m_details;
     QLabel *m_detailName  = nullptr;
     QLabel *m_detailLine1 = nullptr;
     QLabel *m_detailLine2 = nullptr;

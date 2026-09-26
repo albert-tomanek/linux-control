@@ -27,7 +27,7 @@ class ProgramsFeaturesPage : public PageBase {
     Q_OBJECT
 
 public:
-    inline static QString path = "/system-administration/ProgramsFeaturesPage";
+    inline static QString path = "/software/ProgramsFeaturesPage";
     inline static void initAction(QAction *ac)
     {
         ac->setText("Programs and Features");
