@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://kde.org"
+      xmlns:xsi="http://w3.org"
+	  xsi:schemaLocation="http://kde.org
+	                      http://kde.org/kcfg.xsd">
+  <!-- The rc file where configurations are written to on disk -->
+  <kcfgfile name="linuxcontrolrc"/>
+
+  <group name="General">
+    <entry name="iconView" type="Bool">
+	  <label>Navigate settings using icon view instead of paragraph view.</label>
+	  <default>false</default>
+	</entry>
+  </group>
+</kcfg>

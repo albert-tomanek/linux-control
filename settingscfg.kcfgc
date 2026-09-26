@@ -1,0 +1,9 @@
+# Specify the XML schema file
+File=settingscfg.kcfg
+# The exact C++ class name that will be generated
+ClassName=SettingsCfg
+
+Singleton=true
+Mutators=true
+GenerateProperties=true
+ItemAccessors=true

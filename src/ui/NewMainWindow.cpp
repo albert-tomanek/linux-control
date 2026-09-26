@@ -19,12 +19,14 @@
 #include "KCMPage.h"
 
 #include "all_pages.h"
+#include "settingscfg.h"
 
 NewMainWindow::NewMainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::NewMainWindow)
 {
     ui->setupUi(this);
+    Aero::makeInsetWindow(this, centralWidget(), ui->header);
 
     m_br = new Aero::Browser("/", this);
 
@@ -89,7 +91,15 @@ NewMainWindow::NewMainWindow(QWidget *parent)
     makePages();
     makeActions();
 
-    Aero::makeInsetWindow(this, centralWidget(), ui->header);
+    // Settings
+
+    connect(qApp, &QCoreApplication::aboutToQuit, [=]() {
+        SettingsCfg::self()->save();
+    });
+
+    connect(SettingsCfg::self(), &SettingsCfg::iconViewChanged, [=]() {     // Reload page instantly to display icon view mode
+        m_br->reload();
+    });
 }
 
 NewMainWindow::~NewMainWindow()

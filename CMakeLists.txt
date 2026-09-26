@@ -13,6 +13,7 @@ find_package(KF6WindowSystem REQUIRED)
 find_package(KF6KCMUtils REQUIRED)
 find_package(KF6CoreAddons REQUIRED)
 find_package(KF6Service REQUIRED)
+find_package(KF6Config REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(AeroQt REQUIRED)
@@ -44,8 +45,13 @@ file(GLOB_RECURSE sources
   "${CMAKE_CURRENT_LIST_DIR}/src/*.ui"
 )
 
+kconfig_add_kcfg_files(SETTINGSCFG settingscfg.kcfgc)
+qt6_wrap_cpp(SETTINGSCFG_MOC "${CMAKE_CURRENT_BINARY_DIR}/settingscfg.h")
+
 qt_add_executable(controlpanel
   ${sources}
+  ${SETTINGSCFG}
+  ${SETTINGSCFG_MOC}
 )
 
 target_include_directories(controlpanel PRIVATE
@@ -56,6 +62,7 @@ target_include_directories(controlpanel PRIVATE
     src/data
     src
     "${CMAKE_CURRENT_BINARY_DIR}/include"
+    "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
 target_link_libraries(controlpanel PRIVATE
@@ -71,6 +78,7 @@ target_link_libraries(controlpanel PRIVATE
     KF6::KCMUtilsCore
     KF6::CoreAddons
     KF6::Service
+    KF6::ConfigCore
     ZLIB::ZLIB
     OpenSSL::Crypto
     AeroQt

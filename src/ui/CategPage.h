@@ -19,6 +19,9 @@ public:
     explicit CategPage(Aero::Browser *br, QString pathParent, bool expandCategs = false, QWidget *parent = nullptr);
 
     static QAction *registerRoot(Aero::Browser *br, QList<KPluginMetaData> allKcms);
+
+protected:
+    void addContextMenu(QWidget *w);
 };
 
 #endif // HOMEPAGE_H
